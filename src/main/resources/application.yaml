@@ -1,0 +1,49 @@
+
+
+spring:
+  application:
+    name: MeetingRoom
+  profiles:
+    default: local
+  config:
+    import: optional:file:.env[.properties]  # .env import
+
+  mail:
+    host: smtp.gmail.com # Gmail SMTP 서버 주소
+    port: 587 # Gmail SMTP 서버의 TLS 포트
+    username: ${MAIL.USERNAME}
+    password: ${MAIL.PASSWORD}
+    properties:
+      mail:
+       smtp:
+          auth: true
+          timeout: 5000 # 메일 서버와의 연결 타임아웃 설정 (5초)
+          starttls:
+            enable: true # 평문을 암호화하여 전송하도록 설정
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT}
+jwt:
+  access:
+    expiration: ${JWT_ACCESS_TOKEN_EXPIRATION} # 30 minutes
+    secret: ${JWT_ACCESS_TOKEN_SECRET_KEY}
+  refresh:
+    expiration: ${JWT_REFRESH_TOKEN_EXPIRATION} # 7 days
+    secret: ${JWT_REFRESH_TOKEN_SECRET_KEY}
+
+aws:
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    accessKeyId: ${AWS_S3_ACCESS_KEY}
+    secretKey: ${AWS_S3_SECRET_KEY}
+    region: ${AWS_S3_REGION}
+
+server:
+  port: 8081

@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:h2:tcp://localhost/~/meetingroom;NON_KEYWORDS=USER
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    properties:
+      hibernate:
+        format_sql: true
+        default_batch_fetch_size: 1000
+        dialect: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create
+    defer-datasource-initialization: true # (2.5~) Hibernate 초기화 이후 data.sql 실행
+    open-in-view: false # (2.5~) Lazy Loading을 위해 Open Session in View 사용 안함
+  sql:
+    init:
+      mode: always # (2.5~) data.sql 파일을 항상 실행
+
+logging:
+  level:
+    org.hibernate.SQL: debug
+    org.hibernate.orm.jdbc.bind: trace
