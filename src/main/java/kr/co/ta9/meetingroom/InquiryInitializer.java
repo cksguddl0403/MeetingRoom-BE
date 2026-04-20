@@ -28,10 +28,10 @@ public class InquiryInitializer implements ApplicationRunner {
     @Transactional
     @Override
     public void run(ApplicationArguments args) {
-        User user = userRepository.findByLoginId("cksgud0403")
+        User user = userRepository.findByLoginId("testuser01")
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
-        Category category = categoryRepository.findById(5L)
+        Category category = categoryRepository.findById(1L)
                 .orElseThrow(() -> new CategoryException(CategoryErrorCode.CATEGORY_NOT_FOUND));
 
         inquiryRepository.save(Inquiry.createInquiry(

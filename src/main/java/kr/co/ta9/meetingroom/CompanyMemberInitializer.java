@@ -29,10 +29,10 @@ public class CompanyMemberInitializer implements ApplicationRunner {
     @Transactional
     @Override
     public void run(ApplicationArguments args) {
-        User user1 = userRepository.findByLoginId("cksgud0403")
+        User user1 = userRepository.findByLoginId("testuser01")
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
-        User user2 = userRepository.findByLoginId("cksgud")
+        User user2 = userRepository.findByLoginId("testuser02")
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         Company company = companyRepository.findById(1L)
