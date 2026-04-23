@@ -40,6 +40,7 @@ import java.util.List;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class InquiryService {
+    private static final int MAX_INQUIRY_IMAGE_COUNT = 5;
 
     private final InquiryRepository inquiryRepository;
     private final InquiryReplyRepository inquiryReplyRepository;
@@ -67,6 +68,9 @@ public class InquiryService {
 
         // MultipartFile 유효성 검사
         validateMultipartFiles(imageFiles);
+
+        // 이미지 개수 검증
+        validateCreateImageCount(imageFiles);
 
         boolean secret = Boolean.TRUE.equals(inquiryCreateRequestDto.getIsPrivate());
 
@@ -189,6 +193,9 @@ public class InquiryService {
 
         // 유지할 이미지 URL 목록 생성
         List<String> retainUrls = inquiryUpdateRequestDto.getRetainImageUrls();
+
+        // 이미지 개수 검증
+        validateUpdateImageCount(retainUrls, imageFiles);
 
         // 유지할 이미지 URL이 기존 이미지 목록에 모두 존재하는지 검증
         for (String retainUrl : retainUrls) {
@@ -320,6 +327,39 @@ public class InquiryService {
                 }
             }
         }
+    }
+
+    private void validateCreateImageCount(List<MultipartFile> imageFiles) {
+        int newImageCount = countValidMultipartFiles(imageFiles);
+
+        if (newImageCount > MAX_INQUIRY_IMAGE_COUNT) {
+            throw new InquiryException(InquiryErrorCode.INQUIRY_IMAGE_COUNT_EXCEEDED);
+        }
+    }
+
+    private void validateUpdateImageCount(List<String> retainImageUrls, List<MultipartFile> imageFiles) {
+        int retainImageCount = retainImageUrls == null ? 0 : (int) retainImageUrls.stream().distinct().count();
+        int newImageCount = countValidMultipartFiles(imageFiles);
+
+        if (retainImageCount + newImageCount > MAX_INQUIRY_IMAGE_COUNT) {
+            throw new InquiryException(InquiryErrorCode.INQUIRY_IMAGE_COUNT_EXCEEDED);
+        }
+    }
+
+    private int countValidMultipartFiles(List<MultipartFile> imageFiles) {
+        if (imageFiles == null || imageFiles.isEmpty()) {
+            return 0;
+        }
+
+        int count = 0;
+        for (MultipartFile imageFile : imageFiles) {
+            if (imageFile == null || imageFile.isEmpty()) {
+                continue;
+            }
+            count++;
+        }
+
+        return count;
     }
 
     // 이미지 업로드

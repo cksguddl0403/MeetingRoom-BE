@@ -15,6 +15,7 @@ public enum InquiryErrorCode implements ErrorCode {
 
     INQUIRY_IMAGE_FORMAT_INVALID(HttpStatus.BAD_REQUEST, "INQUIRY-07", "문의 이미지는 JPG/PNG/WEBP 형식만 업로드할 수 있습니다."),
     INQUIRY_IMAGE_INVALID(HttpStatus.BAD_REQUEST, "INQUIRY-06", "이 문의에 속하지 않는 이미지입니다."),
+    INQUIRY_IMAGE_COUNT_EXCEEDED(HttpStatus.BAD_REQUEST, "INQUIRY-08", "문의 이미지는 최대 5개까지 등록할 수 있습니다."),
 
     INQUIRY_DELETE_NOT_ALLOWED_WITH_REPLY(HttpStatus.BAD_REQUEST, "INQUIRY-05", "답변이 등록된 문의는 삭제할 수 없습니다.");
 
