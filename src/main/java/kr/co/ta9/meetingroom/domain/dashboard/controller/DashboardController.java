@@ -2,7 +2,6 @@ package kr.co.ta9.meetingroom.domain.dashboard.controller;
 
 import jakarta.validation.Valid;
 import kr.co.ta9.meetingroom.domain.dashboard.dto.DashboardDto;
-import kr.co.ta9.meetingroom.domain.dashboard.dto.DashboardSearchRequestDto;
 import kr.co.ta9.meetingroom.domain.dashboard.service.DashboardService;
 import kr.co.ta9.meetingroom.domain.user.entity.User;
 import kr.co.ta9.meetingroom.global.common.annotation.LoginUser;

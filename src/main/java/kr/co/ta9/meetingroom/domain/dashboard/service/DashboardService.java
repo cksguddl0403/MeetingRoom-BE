@@ -2,7 +2,6 @@ package kr.co.ta9.meetingroom.domain.dashboard.service;
 import kr.co.ta9.meetingroom.domain.company.entity.CompanyMember;
 import kr.co.ta9.meetingroom.domain.company.repository.CompanyMemberRepository;
 import kr.co.ta9.meetingroom.domain.dashboard.dto.DashboardDto;
-import kr.co.ta9.meetingroom.domain.dashboard.dto.DashboardSearchRequestDto;
 import kr.co.ta9.meetingroom.domain.dashboard.mapper.DashboardMapper;
 import kr.co.ta9.meetingroom.domain.equipment.exception.EquipmentException;
 import kr.co.ta9.meetingroom.domain.inspection.dto.InspectionQueryDto;
