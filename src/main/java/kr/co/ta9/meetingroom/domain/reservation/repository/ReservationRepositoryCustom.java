@@ -18,5 +18,5 @@ public interface ReservationRepositoryCustom {
             Pageable pageable
     );
 
-    List<ReservationQueryDto> getReservations(Long currentUserId, Long companyId, List<Long> roomIds, ReservationListSearchRequestDto reservationListSearchRequestDto);
+    List<ReservationQueryDto> getAllReservations(Long currentUserId, Long companyId, List<Long> roomIds);
 }

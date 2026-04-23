@@ -32,16 +32,16 @@ public class DashboardService {
     private final DashboardMapper dashboardMapper;
 
     // 대시보드 조회
-    public DashboardDto getDashboard(User currentUser, Long companyId, DashboardSearchRequestDto dashboardSearchRequestDto) {
+    public DashboardDto getDashboard(User currentUser, Long companyId) {
         validateCurrentUserBelongsToCompany(currentUser, companyId);
 
         List<RoomQueryDto> roomQueryDtos = roomRepository.getAllRooms(companyId, LocalDateTime.now());
 
         List<Long> roomIds = roomQueryDtos.stream().map(RoomQueryDto::getId).toList();
 
-        List<ReservationQueryDto> reservationQueryDtos = reservationRepository.getReservations(currentUser.getId(), companyId, roomIds, dashboardSearchRequestDto.getReservationListSearchRequestDto());
+        List<ReservationQueryDto> reservationQueryDtos = reservationRepository.getAllReservations(currentUser.getId(), companyId, roomIds);
 
-        List<InspectionQueryDto> inspections = inspectionRepository.getAllInspections(companyId, dashboardSearchRequestDto.getInspectionListSearchRequestDto());
+        List<InspectionQueryDto> inspections = inspectionRepository.getAllInspections(companyId);
 
         return dashboardMapper.toDto(roomQueryDtos, reservationQueryDtos, inspections);
     }

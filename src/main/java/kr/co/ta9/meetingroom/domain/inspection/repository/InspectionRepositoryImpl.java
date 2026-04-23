@@ -146,7 +146,7 @@ public class InspectionRepositoryImpl implements InspectionRepositoryCustom {
      *   AND (:toDate IS NULL OR i.start_at < :toDatePlusOneStartOfDay)
      */
     @Override
-    public List<InspectionQueryDto> getAllInspections(Long companyId, InspectionListSearchRequestDto inspectionListSearchRequestDto) {
+    public List<InspectionQueryDto> getAllInspections(Long companyId) {
         return queryFactory
                 .select(Projections.constructor(
                         InspectionQueryDto.class,
@@ -164,11 +164,7 @@ public class InspectionRepositoryImpl implements InspectionRepositoryCustom {
                 .from(inspection)
                 .leftJoin(inspection.room, room)
                 .where(
-                        companyIdEq(companyId),
-                        roomIdEq(inspectionListSearchRequestDto),
-                        nameContains(inspectionListSearchRequestDto),
-                        fromDateGoe(inspectionListSearchRequestDto),
-                        toDateLt(inspectionListSearchRequestDto)
+                        companyIdEq(companyId)
                 )
                 .fetch();
     }
@@ -195,7 +191,7 @@ public class InspectionRepositoryImpl implements InspectionRepositoryCustom {
      * 회의실 ID 필터 조건을 생성합니다.
      *
      * WHERE rm.id = ?
-     *   (omit WHEN roomId IS NULL)
+     *   (roomId가 NULL이면 조건 생략)
      */
     private BooleanExpression roomIdEq(InspectionListSearchRequestDto inspectionListSearchRequestDto) {
         if (inspectionListSearchRequestDto == null || inspectionListSearchRequestDto.getRoomId() == null) {
@@ -207,9 +203,9 @@ public class InspectionRepositoryImpl implements InspectionRepositoryCustom {
     /*
      * 정렬 요청을 ORDER BY 절로 변환합니다.
      *
-     * ORDER BY i.created_at ASC|DESC  WHEN sort=createdAt
-     * ORDER BY i.id DESC              WHEN sort unspecified
-     * ORDER BY i.id ASC               WHEN unsupported property
+     * ORDER BY i.created_at ASC|DESC  (sort=createdAt)
+     * ORDER BY i.id DESC              (sort 미지정)
+     * ORDER BY i.id ASC               (지원하지 않는 sort)
      */
     private List<OrderSpecifier<?>> resolveSortOrders(Pageable pageable) {
         Sort sort = pageable.getSort();
@@ -229,7 +225,7 @@ public class InspectionRepositoryImpl implements InspectionRepositoryCustom {
      * 점검명 검색 필터 조건을 생성합니다.
      *
      * WHERE i.name LIKE CONCAT('%', ?, '%')
-     *   (omit WHEN search name IS NULL OR blank)
+     *   (name이 NULL 또는 공백이면 조건 생략)
      */
     private BooleanExpression nameContains(InspectionListSearchRequestDto inspectionListSearchRequestDto) {
         if (inspectionListSearchRequestDto == null) {
@@ -246,7 +242,7 @@ public class InspectionRepositoryImpl implements InspectionRepositoryCustom {
      * 시작일 하한 필터 조건을 생성합니다.
      *
      * WHERE i.end_at >= :fromDateStartOfDay
-     *   (omit WHEN fromDate IS NULL)
+     *   (fromDate가 NULL이면 조건 생략)
      */
     private BooleanExpression fromDateGoe(InspectionListSearchRequestDto inspectionListSearchRequestDto) {
         if (inspectionListSearchRequestDto == null || inspectionListSearchRequestDto.getFromDate() == null) {
@@ -260,7 +256,7 @@ public class InspectionRepositoryImpl implements InspectionRepositoryCustom {
      * 종료일 상한 필터 조건을 생성합니다.
      *
      * WHERE i.start_at < :toDatePlusOneStartOfDay
-     *   (omit WHEN toDate IS NULL)
+     *   (toDate가 NULL이면 조건 생략)
      */
     private BooleanExpression toDateLt(InspectionListSearchRequestDto inspectionListSearchRequestDto) {
         if (inspectionListSearchRequestDto == null || inspectionListSearchRequestDto.getToDate() == null) {

@@ -11,5 +11,5 @@ import java.util.Optional;
 public interface InspectionRepositoryCustom {
     Optional<InspectionQueryDto> getInspectionById(Long inspectionId);
     Page<InspectionQueryDto> getInspections(Long companyId, Pageable pageable, InspectionListSearchRequestDto inspectionListSearchRequestDto);
-    List<InspectionQueryDto> getAllInspections(Long companyId, InspectionListSearchRequestDto inspectionListSearchRequestDto);
+    List<InspectionQueryDto> getAllInspections(Long companyId);
 }

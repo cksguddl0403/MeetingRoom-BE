@@ -72,7 +72,7 @@ public class NoticeRepositoryImpl implements NoticeRepositoryCustom {
      * 카테고리 필터 조건을 생성합니다.
      *
      * WHERE n.category_id = ?
-     *   (omit WHEN categoryId IS NULL)
+     *   (categoryId가 NULL이면 조건 생략)
      */
     private BooleanExpression eqCategoryId(NoticeListSearchRequestDto noticeListSearchRequestDto) {
         if (noticeListSearchRequestDto == null || noticeListSearchRequestDto.getCategoryId() == null) {
@@ -85,7 +85,7 @@ public class NoticeRepositoryImpl implements NoticeRepositoryCustom {
      * 제목 검색 필터 조건을 생성합니다.
      *
      * WHERE n.title LIKE CONCAT('%', ?, '%')
-     *   (omit WHEN title IS NULL OR blank)
+     *   (title이 NULL 또는 공백이면 조건 생략)
      */
     private BooleanExpression titleContains(NoticeListSearchRequestDto noticeListSearchRequestDto) {
         if (noticeListSearchRequestDto == null || !StringUtils.hasText(noticeListSearchRequestDto.getTitle())) {
@@ -97,10 +97,10 @@ public class NoticeRepositoryImpl implements NoticeRepositoryCustom {
     /*
      * 정렬 요청을 ORDER BY 절로 변환합니다.
      *
-     * ORDER BY n.created_at ASC|DESC   WHEN sort=createdAt
-     * ORDER BY n.view_count ASC|DESC   WHEN sort=viewCount
-     * ORDER BY n.id DESC               WHEN sort unspecified
-     * ORDER BY n.id DESC               WHEN unsupported property
+     * ORDER BY n.created_at ASC|DESC   (sort=createdAt)
+     * ORDER BY n.view_count ASC|DESC   (sort=viewCount)
+     * ORDER BY n.id DESC               (sort 미지정)
+     * ORDER BY n.id DESC               (지원하지 않는 sort)
      */
     private List<OrderSpecifier<?>> resolveSortOrders(Pageable pageable) {
         Sort sort = pageable.getSort();

@@ -158,7 +158,7 @@ public class EquipmentRepositoryImpl implements EquipmentRepositoryCustom {
      * 비품 이름 검색 필터 조건을 생성합니다.
      *
      * WHERE e.name LIKE CONCAT('%', ?, '%')
-     *   (omit WHEN name IS NULL OR name = '')
+     *   (name이 NULL 또는 공백이면 조건 생략)
      */
     private BooleanExpression nameEq(String name) {
         if (!StringUtils.hasText(name)) {
@@ -170,9 +170,9 @@ public class EquipmentRepositoryImpl implements EquipmentRepositoryCustom {
     /*
      * 정렬 요청을 ORDER BY 절로 변환합니다.
      *
-     * ORDER BY e.created_at ASC|DESC  WHEN sort=createdAt
-     * ORDER BY e.id DESC               WHEN sort 미지정
-     * ORDER BY e.id ASC                WHEN sort 지정이나 필드 미지원
+     * ORDER BY e.created_at ASC|DESC  (sort=createdAt)
+     * ORDER BY e.id DESC              (sort 미지정)
+     * ORDER BY e.id ASC               (sort 지정 + 필드 미지원)
      */
     private List<OrderSpecifier<?>> resolveSortOrders(Pageable pageable) {
         Sort sort = pageable.getSort();

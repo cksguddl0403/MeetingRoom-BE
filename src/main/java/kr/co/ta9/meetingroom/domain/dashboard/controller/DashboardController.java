@@ -20,9 +20,8 @@ public class DashboardController {
     @GetMapping
     public ApiResponse<DashboardDto> getDashboard(
             @LoginUser User currentUser,
-            @PathVariable Long companyId,
-            @Valid @ModelAttribute DashboardSearchRequestDto dashboardSearchRequestDto
+            @PathVariable Long companyId
     ) {
-        return ApiResponse.success(dashboardService.getDashboard(currentUser, companyId, dashboardSearchRequestDto));
+        return ApiResponse.success(dashboardService.getDashboard(currentUser, companyId));
     }
 }

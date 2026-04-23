@@ -190,7 +190,7 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
      *   AND rm.id IN (...)
      */
     @Override
-    public List<ReservationQueryDto> getReservations(Long currentUserId, Long companyId, List<Long> roomIds, ReservationListSearchRequestDto reservationListSearchRequestDto) {
+    public List<ReservationQueryDto> getAllReservations(Long currentUserId, Long companyId, List<Long> roomIds) {
         return queryFactory
                 .select(Projections.constructor(ReservationQueryDto.class,
                                 reservation.id,
@@ -213,11 +213,6 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
                 .leftJoin(applicantMember.user, user)
                 .where(
                         eqCompanyId(companyId),
-                        eqStatus(reservationListSearchRequestDto),
-                        fromDateGoe(reservationListSearchRequestDto),
-                        toDateLt(reservationListSearchRequestDto),
-                        timePeriodEq(reservationListSearchRequestDto),
-                        userInvolvement(currentUserId, reservationListSearchRequestDto),
                         room.id.in(roomIds)
                 ).fetch();
     }
@@ -267,7 +262,7 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
      * 회사 ID 필터 조건을 생성합니다.
      *
      * WHERE rm.company_id = ?
-     *   (omit WHEN companyId IS NULL)
+     *   (companyId가 NULL이면 조건 생략)
      */
     private BooleanExpression eqCompanyId(Long companyId) {
         if (companyId == null) {
@@ -280,7 +275,7 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
      * 예약 상태 필터 조건을 생성합니다.
      *
      * WHERE r.status = ?
-     *   (omit WHEN status IS NULL)
+     *   (status가 NULL이면 조건 생략)
      */
     private BooleanExpression eqStatus(ReservationListSearchRequestDto reservationListSearchRequestDto) {
         if (reservationListSearchRequestDto == null || reservationListSearchRequestDto.getStatus() == null) {
@@ -293,7 +288,7 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
      * 시작일 필터 조건을 생성합니다.
      *
      * WHERE r.start_at >= :fromDateStartOfDay
-     *   (omit WHEN fromDate IS NULL)
+     *   (fromDate가 NULL이면 조건 생략)
      */
     private BooleanExpression fromDateGoe(ReservationListSearchRequestDto reservationListSearchRequestDto) {
         if(reservationListSearchRequestDto == null || reservationListSearchRequestDto.getFromDate() == null) {
@@ -307,7 +302,7 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
      * 종료일 필터 조건을 생성합니다.
      *
      * WHERE r.end_at < :toDatePlusOneStartOfDay
-     *   (omit WHEN toDate IS NULL)
+     *   (toDate가 NULL이면 조건 생략)
      */
     private BooleanExpression toDateLt(ReservationListSearchRequestDto reservationListSearchRequestDto) {
         if (reservationListSearchRequestDto == null || reservationListSearchRequestDto.getToDate() == null) {
@@ -320,9 +315,9 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
     /*
      * 시간대 필터 조건을 생성합니다.
      *
-     * WHERE EXTRACT(HOUR FROM r.start_at) < 12   WHEN MORNING
-     * WHERE EXTRACT(HOUR FROM r.start_at) >= 12  WHEN AFTERNOON
-     *   (omit WHEN timePeriod IS NULL)
+     * WHERE EXTRACT(HOUR FROM r.start_at) < 12   (MORNING)
+     * WHERE EXTRACT(HOUR FROM r.start_at) >= 12  (AFTERNOON)
+     *   (timePeriod가 NULL이면 조건 생략)
      */
     private BooleanExpression timePeriodEq(ReservationListSearchRequestDto reservationListSearchRequestDto) {
         if (reservationListSearchRequestDto == null || reservationListSearchRequestDto.getTimePeriod() == null) {
@@ -346,7 +341,7 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
      *         JOIN company_member pcm ON rp.company_member_id = pcm.id
      *         WHERE rp.reservation_id = r.id AND pcm.user_id = ?
      *       )
-     *   (variants by applicantOnly / participatedOnly; omit WHEN both false)
+     *   (applicantOnly / participatedOnly 조합에 따라 분기, 둘 다 false면 조건 생략)
      */
     private BooleanExpression userInvolvement(Long currentUserId, ReservationListSearchRequestDto reservationListSearchRequestDto) {
         if(reservationListSearchRequestDto == null) {
@@ -406,8 +401,8 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
     /*
      * 정렬 요청을 ORDER BY 절로 변환합니다.
      *
-     * ORDER BY r.created_at ASC|DESC  WHEN sort=createdAt
-     * ORDER BY r.id ASC              OTHERWISE
+     * ORDER BY r.created_at ASC|DESC  (sort=createdAt)
+     * ORDER BY r.id ASC               (그 외)
      */
     private List<OrderSpecifier<?>> resolveSortOrders(Pageable pageable) {
         Sort sort = pageable.getSort();

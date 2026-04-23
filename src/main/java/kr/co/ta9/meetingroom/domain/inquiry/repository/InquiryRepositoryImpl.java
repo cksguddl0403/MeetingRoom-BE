@@ -172,7 +172,7 @@ public class InquiryRepositoryImpl implements InquiryRepositoryCustom {
      * 카테고리 필터 조건을 생성합니다.
      *
      * WHERE i.category_id = ?
-     *   (omit WHEN categoryId IS NULL)
+     *   (categoryId가 NULL이면 조건 생략)
      */
     private BooleanExpression eqCategoryId(InquiryListSearchRequestDto inquiryListSearchRequestDto) {
         if (inquiryListSearchRequestDto == null || inquiryListSearchRequestDto.getCategoryId() == null) {
@@ -185,7 +185,7 @@ public class InquiryRepositoryImpl implements InquiryRepositoryCustom {
      * 제목 검색 필터 조건을 생성합니다.
      *
      * WHERE i.title LIKE CONCAT('%', ?, '%')
-     *   (omit WHEN title IS NULL OR blank)
+     *   (title이 NULL 또는 공백이면 조건 생략)
      */
     private BooleanExpression titleContains(InquiryListSearchRequestDto inquiryListSearchRequestDto) {
         if (inquiryListSearchRequestDto == null || !StringUtils.hasText(inquiryListSearchRequestDto.getTitle())) {
@@ -198,7 +198,7 @@ public class InquiryRepositoryImpl implements InquiryRepositoryCustom {
      * 비밀글 여부 필터 조건을 생성합니다.
      *
      * WHERE i.secret = true|false
-     *   (omit WHEN secret IS NULL)
+     *   (secret이 NULL이면 조건 생략)
      */
     private BooleanExpression eqSecret(InquiryListSearchRequestDto inquiryListSearchRequestDto) {
         if (inquiryListSearchRequestDto == null || inquiryListSearchRequestDto.getSecret() == null) {
@@ -212,7 +212,7 @@ public class InquiryRepositoryImpl implements InquiryRepositoryCustom {
      * 작성자 필터 조건을 생성합니다.
      *
      * WHERE i.user_id = ?
-     *   (omit WHEN mineOnly IS NOT TRUE)
+     *   (mineOnly가 TRUE가 아니면 조건 생략)
      */
     private BooleanExpression eqAuthorWhenMineOnly(Long currentUserId, InquiryListSearchRequestDto inquiryListSearchRequestDto) {
         if (inquiryListSearchRequestDto == null || !Boolean.TRUE.equals(inquiryListSearchRequestDto.getMineOnly())) {
@@ -224,8 +224,8 @@ public class InquiryRepositoryImpl implements InquiryRepositoryCustom {
     /*
      * 정렬 요청을 ORDER BY 절로 변환합니다.
      *
-     * ORDER BY i.created_at ASC|DESC  WHEN sort=createdAt
-     * ORDER BY i.id ASC               OTHERWISE
+     * ORDER BY i.created_at ASC|DESC  (sort=createdAt)
+     * ORDER BY i.id ASC               (그 외)
      */
     private List<OrderSpecifier<?>> resolveSortOrders(Pageable pageable) {
         Sort sort = pageable.getSort();

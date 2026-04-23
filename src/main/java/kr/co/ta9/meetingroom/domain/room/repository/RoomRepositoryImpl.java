@@ -250,7 +250,7 @@ public class RoomRepositoryImpl implements RoomRepositoryCustom {
      * 회사 ID 필터 조건을 생성합니다.
      *
      * WHERE rm.company_id = ?
-     *   (omit WHEN companyId IS NULL)
+     *   (companyId가 NULL이면 조건 생략)
      */
     private BooleanExpression eqCompanyId(Long companyId) {
         if (companyId == null) {
@@ -272,7 +272,7 @@ public class RoomRepositoryImpl implements RoomRepositoryCustom {
      * 최소 수용 인원 필터 조건을 생성합니다.
      *
      * WHERE rm.max_capacity >= ?
-     *   (omit WHEN maxCapacity IS NULL)
+     *   (maxCapacity가 NULL이면 조건 생략)
      */
     private BooleanExpression maxCapacityGoe(RoomSearchRequestDto roomSearchRequestDto) {
         if (roomSearchRequestDto == null || roomSearchRequestDto.getMaxCapacity() == null) {
@@ -288,7 +288,7 @@ public class RoomRepositoryImpl implements RoomRepositoryCustom {
      *   SELECT 1 FROM room_equipment re
      *   WHERE re.room_id = rm.id AND re.equipment_id = ? AND ...
      * )
-     *   (repeated AND; omit WHEN equipment list empty)
+     *   (비품 조건 개수만큼 AND EXISTS 반복, 목록이 비어 있으면 조건 생략)
      */
     private BooleanExpression equipmentConditionsAll(RoomSearchRequestDto roomSearchRequestDto) {
         if (roomSearchRequestDto == null) {
@@ -337,8 +337,8 @@ public class RoomRepositoryImpl implements RoomRepositoryCustom {
     /*
      * 정렬 요청을 ORDER BY 절로 변환합니다.
      *
-     * ORDER BY rm.max_capacity ASC|DESC  WHEN sort=maxCapacity
-     * ORDER BY rm.id ASC                 OTHERWISE
+     * ORDER BY rm.max_capacity ASC|DESC  (sort=maxCapacity)
+     * ORDER BY rm.id ASC                 (그 외)
      */
     private List<OrderSpecifier<?>> resolveSortOrders(Pageable pageable) {
         Sort sort = pageable.getSort();
