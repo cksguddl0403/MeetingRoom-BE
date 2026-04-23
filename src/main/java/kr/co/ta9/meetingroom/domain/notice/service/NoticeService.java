@@ -1,5 +1,6 @@
 package kr.co.ta9.meetingroom.domain.notice.service;
 
+import kr.co.ta9.meetingroom.domain.auth.exception.AuthException;
 import kr.co.ta9.meetingroom.domain.notice.dto.NoticeDto;
 import kr.co.ta9.meetingroom.domain.notice.dto.NoticeListDto;
 import kr.co.ta9.meetingroom.domain.notice.dto.NoticeListSearchRequestDto;
@@ -7,7 +8,9 @@ import kr.co.ta9.meetingroom.domain.notice.entity.Notice;
 import kr.co.ta9.meetingroom.domain.notice.exception.NoticeException;
 import kr.co.ta9.meetingroom.domain.notice.mapper.NoticeMapper;
 import kr.co.ta9.meetingroom.domain.notice.repository.NoticeRepository;
+import kr.co.ta9.meetingroom.domain.user.entity.User;
 import kr.co.ta9.meetingroom.global.common.response.OffsetPageResponseDto;
+import kr.co.ta9.meetingroom.global.error.code.AuthErrorCode;
 import kr.co.ta9.meetingroom.global.error.code.NoticeErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,7 +30,13 @@ public class NoticeService {
 
     // 공지사항 상세 조회
     @Transactional
-    public NoticeDto getNotice(Long noticeId) {
+    public NoticeDto getNotice(User currentUser,  Long noticeId) {
+        // 인증 여부 확인
+        if(!currentUser.isCertificated()) {
+            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        }
+
+        // 공지사항 조회 (카테고리 정보 포함)
         Notice notice = noticeRepository.findByIdWithCategory(noticeId)
                 .orElseThrow(() -> new NoticeException(NoticeErrorCode.NOTICE_NOT_FOUND));
 
@@ -36,7 +45,13 @@ public class NoticeService {
     }
 
     // 공지사항 목록 조회
-    public OffsetPageResponseDto<NoticeListDto> getNotices(Pageable pageable, NoticeListSearchRequestDto noticeListSearchRequestDto) {
+    public OffsetPageResponseDto<NoticeListDto> getNotices(User currentUser, Pageable pageable, NoticeListSearchRequestDto noticeListSearchRequestDto) {
+        // 인증 여부 확인
+        if(!currentUser.isCertificated()) {
+            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        }
+
+        // 공지사항 목록 조회 (카테고리 정보 포함)
         Page<Notice> page = noticeRepository.getNotices(noticeListSearchRequestDto, pageable);
 
         List<NoticeListDto> items = page.getContent().stream()

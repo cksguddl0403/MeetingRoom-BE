@@ -1,6 +1,8 @@
 package kr.co.ta9.meetingroom.domain.inspection.service;
 
+import kr.co.ta9.meetingroom.domain.auth.exception.AuthException;
 import kr.co.ta9.meetingroom.domain.company.entity.Company;
+import kr.co.ta9.meetingroom.domain.company.entity.CompanyMember;
 import kr.co.ta9.meetingroom.domain.company.enums.Role;
 import kr.co.ta9.meetingroom.domain.company.exception.CompanyException;
 import kr.co.ta9.meetingroom.domain.company.repository.CompanyMemberRepository;
@@ -17,9 +19,7 @@ import kr.co.ta9.meetingroom.domain.room.exception.RoomException;
 import kr.co.ta9.meetingroom.domain.room.repository.RoomRepository;
 import kr.co.ta9.meetingroom.domain.user.entity.User;
 import kr.co.ta9.meetingroom.global.common.response.OffsetPageResponseDto;
-import kr.co.ta9.meetingroom.global.error.code.CompanyErrorCode;
-import kr.co.ta9.meetingroom.global.error.code.InspectionErrorCode;
-import kr.co.ta9.meetingroom.global.error.code.RoomErrorCode;
+import kr.co.ta9.meetingroom.global.error.code.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional(readOnly = true)
@@ -43,41 +44,50 @@ public class InspectionService {
     // 점검 등록
     @Transactional
     public InspectionDto createInspection(User currentUser, Long companyId, InspectionCreateRequestDto inspectionCreateRequestDto) {
-        if (!inspectionCreateRequestDto.getEndAt().isAfter(inspectionCreateRequestDto.getStartAt())) {
-            throw new InspectionException(InspectionErrorCode.INSPECTION_TIME_RANGE_INVALID);
+        // 인증 여부 확인
+        if(!currentUser.isCertificated()) {
+            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
         }
 
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new CompanyException(CompanyErrorCode.COMPANY_NOT_FOUND));
+        // 현재 사용자 회사 소속 확인
+        CompanyMember companyMember = validateCurrentUserBelongsToCompany(currentUser, companyId);
 
-        if (!companyMemberRepository.existsByUser_IdAndCompany_IdAndRole(
-                currentUser.getId(), company.getId(), Role.ADMIN)) {
-            throw new InspectionException(InspectionErrorCode.INSPECTION_CREATE_ADMIN_REQUIRED);
-        }
+        // 관리자 권한 확인
+        validateAdminRole(companyMember);
 
-        Room room = roomRepository.findById(inspectionCreateRequestDto.getRoomId())
+        // 회의실 조회
+        Room room = roomRepository.findByIdAndDeletedFalse(inspectionCreateRequestDto.getRoomId())
                 .orElseThrow(() -> new RoomException(RoomErrorCode.ROOM_NOT_FOUND));
 
-        boolean hasOverlappingConfirmedReservation =
-                reservationRepository.existsByRoom_IdAndStatusAndStartAtLessThanAndEndAtGreaterThan(
-                        room.getId(), ReservationStatus.CONFIRMED, inspectionCreateRequestDto.getEndAt(), inspectionCreateRequestDto.getStartAt());
-        if (hasOverlappingConfirmedReservation) {
-            throw new InspectionException(InspectionErrorCode.INSPECTION_RESERVATION_CONFLICT);
-        }
-
+        // 점검 시간과 겹치는 다른 점검이 있는지 확인
         boolean hasOverlappingInspection =
                 inspectionRepository.existsByRoom_IdAndStartAtLessThanAndEndAtGreaterThan(
                         room.getId(), inspectionCreateRequestDto.getEndAt(), inspectionCreateRequestDto.getStartAt());
+
+        // 점검 시간과 겹치는 다른 점검이 있으면 예외 발생
         if (hasOverlappingInspection) {
             throw new InspectionException(InspectionErrorCode.INSPECTION_OVERLAP);
         }
 
+        // 점검 시간과 겹치는 확정된 예약이 있는지 확인
+        boolean hasOverlappingConfirmedReservation =
+                reservationRepository.existsByRoom_IdAndStatusAndStartAtLessThanAndEndAtGreaterThan(
+                        room.getId(), ReservationStatus.CONFIRMED, inspectionCreateRequestDto.getEndAt(), inspectionCreateRequestDto.getStartAt());
+
+        // 점검 시간과 겹치는 확정된 예약이 있으면 예외 발생
+        if (hasOverlappingConfirmedReservation) {
+            throw new InspectionException(InspectionErrorCode.INSPECTION_RESERVATION_CONFLICT);
+        }
+
+        // 점검 생성
         Inspection inspection = Inspection.createInspection(
                 inspectionCreateRequestDto.getName(),
                 inspectionCreateRequestDto.getStartAt(),
                 inspectionCreateRequestDto.getEndAt(),
                 room
         );
+
+        // 점검 저장
         inspectionRepository.save(inspection);
 
         return inspectionMapper.toDto(inspection);
@@ -85,10 +95,15 @@ public class InspectionService {
 
     // 점검 목록 조회
     public OffsetPageResponseDto<InspectionListDto> getInspections(User currentUser, Long companyId, Pageable pageable, InspectionListSearchRequestDto InspectionListSearchRequestDto) {
-        if (!companyMemberRepository.existsByUser_IdAndCompany_Id(currentUser.getId(), companyId)) {
-            throw new CompanyException(CompanyErrorCode.COMPANY_ACCESS_DENIED);
+        // 인증 여부 확인
+        if(!currentUser.isCertificated()) {
+            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
         }
 
+        // 현재 사용자 회사 소속 확인
+        validateCurrentUserBelongsToCompany(currentUser, companyId);
+
+        // 점검 목록 조회
         Page<InspectionQueryDto> page = inspectionRepository.getInspections(companyId, pageable, InspectionListSearchRequestDto);
         List<InspectionListDto> inspectionListDtos = page.stream()
                 .map(inspectionMapper::toListDto)
@@ -115,44 +130,54 @@ public class InspectionService {
             Long inspectionId,
             InspectionUpdateRequestDto inspectionUpdateRequestDto
     ) {
-        if (!inspectionUpdateRequestDto.getEndAt().isAfter(inspectionUpdateRequestDto.getStartAt())) {
-            throw new InspectionException(InspectionErrorCode.INSPECTION_TIME_RANGE_INVALID);
+        // 인증 여부 확인
+        if(!currentUser.isCertificated()) {
+            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
         }
 
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new CompanyException(CompanyErrorCode.COMPANY_NOT_FOUND));
+        // 현재 사용자 회사 소속 확인
+        CompanyMember companyMember = validateCurrentUserBelongsToCompany(currentUser, companyId);
 
-        if (!companyMemberRepository.existsByUser_IdAndCompany_IdAndRole(
-                currentUser.getId(), company.getId(), Role.ADMIN)) {
-            throw new InspectionException(InspectionErrorCode.INSPECTION_CREATE_ADMIN_REQUIRED);
-        }
+        // 관리자 권한 확인
+        validateAdminRole(companyMember);
 
-        Inspection inspection = inspectionRepository.findByIdAndRoom_Company_Id(inspectionId, company.getId())
+        // 점검 조회
+        Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new InspectionException(InspectionErrorCode.INSPECTION_NOT_FOUND));
 
-        Room room = roomRepository.findById(inspectionUpdateRequestDto.getRoomId())
+        // 회의실 조회
+        Room room = roomRepository.findByIdAndDeletedFalse(inspectionUpdateRequestDto.getRoomId())
                 .orElseThrow(() -> new RoomException(RoomErrorCode.ROOM_NOT_FOUND));
 
-        boolean hasOverlappingConfirmedReservation =
-                reservationRepository.existsByRoom_IdAndStatusAndStartAtLessThanAndEndAtGreaterThan(
-                        room.getId(), ReservationStatus.CONFIRMED, inspectionUpdateRequestDto.getEndAt(), inspectionUpdateRequestDto.getStartAt());
-        if (hasOverlappingConfirmedReservation) {
-            throw new InspectionException(InspectionErrorCode.INSPECTION_RESERVATION_CONFLICT);
-        }
-
+        // 점검 시간과 겹치는 다른 점검이 있는지 확인
         boolean hasOverlappingInspection =
                 inspectionRepository.existsByRoom_IdAndStartAtLessThanAndEndAtGreaterThanAndIdNot(
                         room.getId(), inspectionUpdateRequestDto.getEndAt(), inspectionUpdateRequestDto.getStartAt(), inspectionId);
+
+        // 점검 시간과 겹치는 다른 점검이 있으면 예외 발생
         if (hasOverlappingInspection) {
             throw new InspectionException(InspectionErrorCode.INSPECTION_OVERLAP);
         }
 
+        // 점검 시간과 겹치는 확정된 예약이 있는지 확인
+        boolean hasOverlappingConfirmedReservation =
+                reservationRepository.existsByRoom_IdAndStatusAndStartAtLessThanAndEndAtGreaterThan(
+                        room.getId(), ReservationStatus.CONFIRMED, inspectionUpdateRequestDto.getEndAt(), inspectionUpdateRequestDto.getStartAt());
+
+        // 점검 시간과 겹치는 확정된 예약이 있으면 예외 발생
+        if (hasOverlappingConfirmedReservation) {
+            throw new InspectionException(InspectionErrorCode.INSPECTION_RESERVATION_CONFLICT);
+        }
+
+        // 점검 수정
         inspection.update(
                 inspectionUpdateRequestDto.getName(),
                 inspectionUpdateRequestDto.getStartAt(),
                 inspectionUpdateRequestDto.getEndAt(),
                 room
         );
+
+        // 점검 조회
         InspectionQueryDto inspectionQueryDto = inspectionRepository.getInspectionById(inspectionId)
                 .orElseThrow(() -> new InspectionException(InspectionErrorCode.INSPECTION_NOT_FOUND));
         return inspectionMapper.toDto(inspectionQueryDto);
@@ -161,17 +186,40 @@ public class InspectionService {
     // 점검 삭제
     @Transactional
     public void deleteInspection(User currentUser, Long companyId, Long inspectionId) {
-        Company company = companyRepository.findById(companyId)
-                .orElseThrow(() -> new CompanyException(CompanyErrorCode.COMPANY_NOT_FOUND));
-
-        if (!companyMemberRepository.existsByUser_IdAndCompany_IdAndRole(
-                currentUser.getId(), company.getId(), Role.ADMIN)) {
-            throw new InspectionException(InspectionErrorCode.INSPECTION_CREATE_ADMIN_REQUIRED);
+        // 인증 여부 확인
+        if(!currentUser.isCertificated()) {
+            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
         }
 
-        Inspection inspection = inspectionRepository.findByIdAndRoom_Company_Id(inspectionId, company.getId())
+        // 현재 사용자 회사 소속 확인
+        CompanyMember companyMember = validateCurrentUserBelongsToCompany(currentUser, companyId);
+
+        // 관리자 권한 확인
+        validateAdminRole(companyMember);
+
+        // 점검 조회
+        Inspection inspection = inspectionRepository.findById(inspectionId)
                 .orElseThrow(() -> new InspectionException(InspectionErrorCode.INSPECTION_NOT_FOUND));
 
+        // 점검 삭제
         inspectionRepository.delete(inspection);
+    }
+
+    // 현재 사용자 회사 소속 확인
+    private CompanyMember validateCurrentUserBelongsToCompany(User currentUser, Long companyId) {
+        Optional<CompanyMember> companyMember = companyMemberRepository.findByUser_IdAndCompany_Id(currentUser.getId(), companyId);
+
+        if (companyMember.isEmpty()) {
+            throw new InspectionException(InspectionErrorCode.INSPECTION_NOT_AUTHORIZED);
+        }
+
+        return companyMember.get();
+    }
+
+    // 관리자 권한 확인
+    private void validateAdminRole(CompanyMember companyMember) {
+        if (companyMember.getRole() != Role.ADMIN) {
+            throw new RoomException(RoomErrorCode.ROOM_NOT_AUTHORIZED);
+        }
     }
 }

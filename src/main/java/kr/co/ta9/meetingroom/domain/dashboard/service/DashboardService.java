@@ -1,9 +1,10 @@
 package kr.co.ta9.meetingroom.domain.dashboard.service;
-import kr.co.ta9.meetingroom.domain.company.exception.CompanyException;
+import kr.co.ta9.meetingroom.domain.company.entity.CompanyMember;
 import kr.co.ta9.meetingroom.domain.company.repository.CompanyMemberRepository;
 import kr.co.ta9.meetingroom.domain.dashboard.dto.DashboardDto;
 import kr.co.ta9.meetingroom.domain.dashboard.dto.DashboardSearchRequestDto;
 import kr.co.ta9.meetingroom.domain.dashboard.mapper.DashboardMapper;
+import kr.co.ta9.meetingroom.domain.equipment.exception.EquipmentException;
 import kr.co.ta9.meetingroom.domain.inspection.dto.InspectionQueryDto;
 import kr.co.ta9.meetingroom.domain.inspection.repository.InspectionRepository;
 import kr.co.ta9.meetingroom.domain.reservation.dto.ReservationQueryDto;
@@ -11,13 +12,14 @@ import kr.co.ta9.meetingroom.domain.reservation.repository.ReservationRepository
 import kr.co.ta9.meetingroom.domain.room.dto.RoomQueryDto;
 import kr.co.ta9.meetingroom.domain.room.repository.RoomRepository;
 import kr.co.ta9.meetingroom.domain.user.entity.User;
-import kr.co.ta9.meetingroom.global.error.code.CompanyErrorCode;
+import kr.co.ta9.meetingroom.global.error.code.EquipmentErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional(readOnly = true)
@@ -29,10 +31,9 @@ public class DashboardService {
     private final CompanyMemberRepository  companyMemberRepository;
     private final DashboardMapper dashboardMapper;
 
+    // 대시보드 조회
     public DashboardDto getDashboard(User currentUser, Long companyId, DashboardSearchRequestDto dashboardSearchRequestDto) {
-        if (!companyMemberRepository.existsByUser_IdAndCompany_Id(currentUser.getId(), companyId)) {
-            throw new CompanyException(CompanyErrorCode.COMPANY_ACCESS_DENIED);
-        }
+        validateCurrentUserBelongsToCompany(currentUser, companyId);
 
         List<RoomQueryDto> roomQueryDtos = roomRepository.getAllRooms(companyId, LocalDateTime.now());
 
@@ -43,6 +44,14 @@ public class DashboardService {
         List<InspectionQueryDto> inspections = inspectionRepository.getAllInspections(companyId, dashboardSearchRequestDto.getInspectionListSearchRequestDto());
 
         return dashboardMapper.toDto(roomQueryDtos, reservationQueryDtos, inspections);
+    }
 
+    // 현재 사용자 회사 소속 확인
+    private void validateCurrentUserBelongsToCompany(User currentUser, Long companyId) {
+        Optional<CompanyMember> companyMember = companyMemberRepository.findByUser_IdAndCompany_Id(currentUser.getId(), companyId);
+
+        if (companyMember.isEmpty()) {
+            throw new EquipmentException(EquipmentErrorCode.EQUIPMENT_NOT_AUTHORIZED);
+        }
     }
 }

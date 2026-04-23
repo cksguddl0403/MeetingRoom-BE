@@ -52,7 +52,9 @@ public class InspectionRepositoryImpl implements InspectionRepositoryCustom {
                 ))
                 .from(inspection)
                 .leftJoin(inspection.room, room)
-                .where(inspectionIdEq(inspectionId))
+                .where(
+                        inspectionIdEq(inspectionId)
+                )
                 .fetchOne();
 
         return Optional.ofNullable(inspectionQueryDto);

@@ -3,6 +3,7 @@ package kr.co.ta9.meetingroom.domain.company.service;
 import kr.co.ta9.meetingroom.domain.company.dto.CompanyDto;
 import kr.co.ta9.meetingroom.domain.company.dto.CompanyMemberListDto;
 import kr.co.ta9.meetingroom.domain.company.dto.CopanyMemberUserDto;
+import kr.co.ta9.meetingroom.domain.company.enums.Status;
 import kr.co.ta9.meetingroom.domain.company.exception.CompanyException;
 import kr.co.ta9.meetingroom.domain.company.mapper.CompanyMapper;
 import kr.co.ta9.meetingroom.domain.company.repository.CompanyMemberRepository;
@@ -18,7 +19,6 @@ import java.util.List;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class CompanyService {
-
     private final CompanyRepository companyRepository;
     private final CompanyMemberRepository companyMemberRepository;
     private final CompanyMapper companyMapper;
@@ -30,7 +30,7 @@ public class CompanyService {
                 .orElseThrow(() -> new CompanyException(CompanyErrorCode.COMPANY_NOT_FOUND));
     }
 
-    // 회사 구성원 목록 전체 조회
+    // 회사 멤버 목록 전체 조회
     public List<CompanyMemberListDto> getAllCompanyMembers(Long companyId) {
         return companyMemberRepository.findAllByCompany_Id(companyId).stream()
                 .map(companyMember -> CompanyMemberListDto.builder()

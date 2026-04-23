@@ -6,15 +6,11 @@ import lombok.Getter;
 @Getter
 public class ReservationParticipantDto {
     private Long id;
-    private Long userId;
-    private String nickname;
-    private String profileImageUrl;
+    private ReservationParticipantCompanyMemberDto companyMember;
 
     @Builder
-    private ReservationParticipantDto(Long id, Long userId, String nickname, String profileImageUrl) {
+    private ReservationParticipantDto(Long id, ReservationParticipantCompanyMemberDto companyMember) {
         this.id = id;
-        this.userId = userId;
-        this.nickname = nickname;
-        this.profileImageUrl = profileImageUrl;
+        this.companyMember = companyMember;
     }
 }

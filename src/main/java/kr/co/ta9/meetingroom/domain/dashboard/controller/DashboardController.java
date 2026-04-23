@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 public class DashboardController {
     private final DashboardService dashboardService;
 
+    // 대시보드 조회
     @GetMapping
     public ApiResponse<DashboardDto> getDashboard(
             @LoginUser User currentUser,

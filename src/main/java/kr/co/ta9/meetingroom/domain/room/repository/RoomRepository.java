@@ -62,4 +62,15 @@ public interface RoomRepository extends JpaRepository<Room, Long>, RoomRepositor
      * LIMIT 1
      */
     Optional<Room> findByIdAndCompany_Id(Long id, Long companyId);
+
+    /*
+     * 삭제되지 않은 회의실 단건을 조회합니다.
+     *
+     * SELECT r.*
+     * FROM room r
+     * WHERE r.id = ?
+     *   AND r.is_deleted = FALSE
+     * LIMIT 1
+     */
+    Optional<Room> findByIdAndDeletedFalse(Long id);
 }

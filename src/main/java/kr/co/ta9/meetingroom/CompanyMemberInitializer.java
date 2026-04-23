@@ -35,10 +35,14 @@ public class CompanyMemberInitializer implements ApplicationRunner {
         User user2 = userRepository.findByLoginId("testuser02")
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
+        User user3 = userRepository.findByLoginId("testuser03")
+                .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
+
         Company company = companyRepository.findById(1L)
                 .orElseThrow(() -> new CompanyException(CompanyErrorCode.COMPANY_NOT_FOUND));
 
         companyMemberRepository.save(CompanyMember.createCompanyMember(Role.ADMIN, user1, company));
         companyMemberRepository.save(CompanyMember.createCompanyMember(Role.EMPLOYEE, user2, company));
+        companyMemberRepository.save(CompanyMember.createCompanyMember(Role.EMPLOYEE, user3, company));
     }
 }

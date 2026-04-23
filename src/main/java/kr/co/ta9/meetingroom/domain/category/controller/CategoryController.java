@@ -3,6 +3,8 @@ package kr.co.ta9.meetingroom.domain.category.controller;
 import kr.co.ta9.meetingroom.domain.category.dto.CategoryListDto;
 import kr.co.ta9.meetingroom.domain.category.enums.CategoryType;
 import kr.co.ta9.meetingroom.domain.category.service.CategoryService;
+import kr.co.ta9.meetingroom.domain.user.entity.User;
+import kr.co.ta9.meetingroom.global.common.annotation.LoginUser;
 import kr.co.ta9.meetingroom.global.common.response.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -23,8 +25,9 @@ public class CategoryController {
     // 카테고리 목록 전체 조회
     @GetMapping("/all")
     public ResponseEntity<ApiResponse<List<CategoryListDto>>> getAllCategories(
+            @LoginUser User currentUser,
             @RequestParam("type") CategoryType categoryType
     ) {
-        return ResponseEntity.ok(ApiResponse.success(categoryService.getAllCategories(categoryType)));
+        return ResponseEntity.ok(ApiResponse.success(categoryService.getAllCategories(currentUser, categoryType)));
     }
 }

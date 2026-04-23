@@ -7,6 +7,8 @@ import kr.co.ta9.meetingroom.domain.reservation.dto.ReservationParticipantQueryD
 import kr.co.ta9.meetingroom.domain.reservation.dto.ReservationQueryDto;
 import kr.co.ta9.meetingroom.domain.reservation.dto.ReservationRoomDto;
 import kr.co.ta9.meetingroom.domain.reservation.dto.ReservationApplicantDto;
+import kr.co.ta9.meetingroom.domain.reservation.dto.ReservationParticipantCompanyMemberDto;
+import kr.co.ta9.meetingroom.domain.reservation.dto.ReservationParticipantCompanyMemberUserDto;
 import kr.co.ta9.meetingroom.domain.reservation.entity.Reservation;
 import kr.co.ta9.meetingroom.domain.reservation.entity.ReservationParticipant;
 import org.mapstruct.Mapper;
@@ -35,9 +37,14 @@ public interface ReservationMapper {
                                 : participants.stream()
                                 .map(participant -> ReservationParticipantDto.builder()
                                         .id(participant.getId())
-                                        .userId(participant.getCompanyMember().getUser().getId())
-                                        .nickname(participant.getCompanyMember().getUser().getNickname())
-                                        .profileImageUrl(null)
+                                        .companyMember(ReservationParticipantCompanyMemberDto.builder()
+                                                .id(participant.getCompanyMember().getId())
+                                                .user(ReservationParticipantCompanyMemberUserDto.builder()
+                                                        .id(participant.getCompanyMember().getUser().getId())
+                                                        .nickname(participant.getCompanyMember().getUser().getNickname())
+                                                        .profileImageUrl(null)
+                                                        .build())
+                                                .build())
                                         .build())
                                 .collect(Collectors.toList())
                 )
@@ -71,9 +78,14 @@ public interface ReservationMapper {
                                 : participantQueryDtos.stream()
                                 .map(participant -> ReservationParticipantDto.builder()
                                         .id(participant.getId())
-                                        .userId(participant.getUserId())
-                                        .nickname(participant.getNickname())
-                                        .profileImageUrl(participant.getProfileImageUrl())
+                                        .companyMember(ReservationParticipantCompanyMemberDto.builder()
+                                                .id(participant.getCompanyMember().getId())
+                                                .user(ReservationParticipantCompanyMemberUserDto.builder()
+                                                        .id(participant.getCompanyMember().getUser().getId())
+                                                        .nickname(participant.getCompanyMember().getUser().getNickname())
+                                                        .profileImageUrl(participant.getCompanyMember().getUser().getProfileImageUrl())
+                                                        .build())
+                                                .build())
                                         .build())
                                 .collect(Collectors.toList())
                 )
@@ -108,9 +120,14 @@ public interface ReservationMapper {
                                 : participantQueryDtos.stream()
                                 .map(participant -> ReservationParticipantDto.builder()
                                         .id(participant.getId())
-                                        .userId(participant.getUserId())
-                                        .nickname(participant.getNickname())
-                                        .profileImageUrl(participant.getProfileImageUrl())
+                                        .companyMember(ReservationParticipantCompanyMemberDto.builder()
+                                                .id(participant.getCompanyMember().getId())
+                                                .user(ReservationParticipantCompanyMemberUserDto.builder()
+                                                        .id(participant.getCompanyMember().getUser().getId())
+                                                        .nickname(participant.getCompanyMember().getUser().getNickname())
+                                                        .profileImageUrl(participant.getCompanyMember().getUser().getProfileImageUrl())
+                                                        .build())
+                                                .build())
                                         .build())
                                 .collect(Collectors.toList())
                 )

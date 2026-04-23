@@ -9,8 +9,6 @@ import org.springframework.http.HttpStatus;
 public enum ReservationErrorCode implements ErrorCode {
     RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "RESERVATION-01", "예약을 찾을 수 없습니다."),
     RESERVATION_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "RESERVATION-02", "해당 시간에 이미 예약이 존재합니다."),
-    RESERVATION_TIME_INVALID(HttpStatus.BAD_REQUEST, "RESERVATION-03", "시작 일시와 종료 일시를 올바르게 입력해 주세요."),
-    RESERVATION_END_NOT_AFTER_START(HttpStatus.BAD_REQUEST, "RESERVATION-09", "종료 일시는 시작 일시보다 이후여야 합니다."),
     RESERVATION_NOT_AUTHORIZED(HttpStatus.FORBIDDEN, "RESERVATION-04", "예약 권한이 없습니다."),
     RESERVATION_ROOM_UNDER_INSPECTION(HttpStatus.BAD_REQUEST, "RESERVATION-05", "선택한 회의실은 해당 시간에 점검 중입니다."),
     RESERVATION_CAPACITY_EXCEEDED(HttpStatus.BAD_REQUEST, "RESERVATION-06", "회의 참가 인원이 회의실 최대 수용 인원을 초과합니다."),

@@ -25,7 +25,7 @@ public class UserInitializer implements ApplicationRunner {
         User user1 = User.createUser(
                 "testuser01",
                 passwordEncoder.encode("Test#pwd01"),
-                "하린",
+                "테스트유저",
                 "testnick01",
                 "test.user01@example.org"
         );
@@ -33,10 +33,18 @@ public class UserInitializer implements ApplicationRunner {
         User user2 = User.createUser(
                 "testuser02",
                 passwordEncoder.encode("Test#pwd02"),
-                "지우",
+                "테스트유저",
                 "testnick02",
                 "test.user02@example.org"
         );
-        userRepository.saveAll(List.of(user1, user2));
+
+        User user3 = User.createUser(
+                "testuser03",
+                passwordEncoder.encode("Test#pwd03"),
+                "테스트유저",
+                "testnick03",
+                "test.user03@example.org"
+        );
+        userRepository.saveAll(List.of(user1, user2, user3));
     }
 }

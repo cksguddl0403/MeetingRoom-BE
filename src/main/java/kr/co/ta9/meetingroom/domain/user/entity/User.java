@@ -19,7 +19,7 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true, length = 20)
     private String loginId; // 로그인 아이디
 
-    @Column(nullable = false, length = 60)
+    @Column(nullable = false, length = 255)
     private String password; // 비밀번호
 
     @Column(nullable = false, length = 20)

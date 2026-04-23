@@ -66,7 +66,7 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
      *   )
      *
      * SELECT r.id, r.title, rm.id,
-     *        CASE WHEN rm.is_deleted = TRUE THEN CONCAT(rm.name, ' (삭제 됨)') ELSE rm.name END AS room_name,
+     *        CASE WHEN rm.is_deleted = TRUE THEN CONCAT(SUBSTRING_INDEX(rm.name, '_deleted_', 1), ' (삭제 됨)') ELSE rm.name END AS room_name,
      *        r.start_at, r.end_at, r.status, u.id,
      *        CASE WHEN am.status = 'RESIGNED' THEN CONCAT(u.nickname, ' (전 직원)') ELSE u.nickname END AS applicant_nickname
      * FROM reservation r
@@ -160,7 +160,7 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
      * 회의실 목록 조건으로 예약 목록을 조회합니다.
      *
      * SELECT r.id, r.title, rm.id,
-     *        CASE WHEN rm.is_deleted = TRUE THEN CONCAT(rm.name, ' (삭제 됨)') ELSE rm.name END AS room_name,
+     *        CASE WHEN rm.is_deleted = TRUE THEN CONCAT(SUBSTRING_INDEX(rm.name, '_deleted_', 1), ' (삭제 됨)') ELSE rm.name END AS room_name,
      *        r.start_at, r.end_at, r.status, u.id,
      *        CASE WHEN am.status = 'RESIGNED' THEN CONCAT(u.nickname, ' (전 직원)') ELSE u.nickname END AS applicant_nickname
      * FROM reservation r
@@ -226,7 +226,7 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
      * 예약 ID 기준 상세 정보를 조회합니다.
      *
      * SELECT r.id, r.title, rm.id,
-     *        CASE WHEN rm.is_deleted = TRUE THEN CONCAT(rm.name, ' (삭제 됨)') ELSE rm.name END AS room_name,
+     *        CASE WHEN rm.is_deleted = TRUE THEN CONCAT(SUBSTRING_INDEX(rm.name, '_deleted_', 1), ' (삭제 됨)') ELSE rm.name END AS room_name,
      *        r.start_at, r.end_at, r.status, u.id,
      *        CASE WHEN am.status = 'RESIGNED' THEN CONCAT(u.nickname, ' (전 직원)') ELSE u.nickname END AS applicant_nickname
      * FROM reservation r
@@ -378,11 +378,13 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
     /*
      * 회의실 표시명을 생성합니다.
      *
-     * CASE WHEN rm.is_deleted = TRUE THEN CONCAT(rm.name, ' (삭제 됨)') ELSE rm.name END
+     * CASE WHEN rm.is_deleted = TRUE
+     *      THEN CONCAT(SUBSTRING_INDEX(rm.name, '_deleted_', 1), ' (삭제 됨)')
+     *      ELSE rm.name END
      */
     private StringExpression roomDisplayNameExpr() {
         return Expressions.stringTemplate(
-                "case when {0} = true then concat({1}, ' (삭제 됨)') else {1} end",
+                "case when {0} = true then concat(function('substring_index', {1}, '_deleted_', 1), ' (삭제 됨)') else {1} end",
                 room.deleted,
                 room.name
         );

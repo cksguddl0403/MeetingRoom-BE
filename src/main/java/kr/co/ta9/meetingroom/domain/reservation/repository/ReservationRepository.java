@@ -61,33 +61,33 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long>,
     Optional<Reservation> findByIdAndRoom_Company_Id(Long id, Long companyId);
 
     /*
-     * 참여자 기준 예약 시간 중복 사용자 ID 목록을 조회합니다.
+     * 예약 시간이 겹치는 회사 멤버 ID 목록을 조회합니다.
      *
-     * SELECT DISTINCT cm.user_id
+     * SELECT DISTINCT cm.id
      * FROM reservation_participant rp
      * JOIN reservation r ON rp.reservation_id = r.id
      * JOIN company_member cm ON rp.company_member_id = cm.id
      * WHERE r.status = ?
      *   AND r.start_at < ?
      *   AND r.end_at > ?
-     *   AND cm.user_id IN (?, ?, ...)
+     *   AND cm.id IN (...companyMemberIds)
      *   AND (? IS NULL OR r.id <> ?)
      */
     @Query("""
-            SELECT DISTINCT p.companyMember.user.id
+            SELECT DISTINCT p.companyMember.id
             FROM ReservationParticipant p
             JOIN p.reservation r
             WHERE r.status = :status
               AND r.startAt < :endAt
               AND r.endAt > :startAt
-              AND p.companyMember.user.id IN :userIds
+              AND p.companyMember.id IN :companyMemberIds
               AND (:excludeReservationId IS NULL OR r.id <> :excludeReservationId)
             """)
-    Set<Long> findUserIdsWithOverlappingReservationAsParticipant(
+    Set<Long> findCompanyMemberIdsWithOverlappingReservationAsParticipant(
             @Param("status") ReservationStatus status,
             @Param("startAt") LocalDateTime startAt,
             @Param("endAt") LocalDateTime endAt,
-            @Param("userIds") List<Long> userIds,
+            @Param("companyMemberIds") List<Long> companyMemberIds,
             @Param("excludeReservationId") Long excludeReservationId
     );
 }

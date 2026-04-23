@@ -23,16 +23,16 @@ public class ReservationUpdateRequestDto {
     @Size(max = 50, message = "제목은 공백 포함 최대 50자까지 입력할 수 있습니다.")
     private String title;
 
-    @NotNull
+    @NotNull(message = "회의실 ID는 필수 입력값입니다.")
     private Long roomId;
 
-    @NotNull
+    @NotNull(message = "시작 일시는 필수 입력값입니다.")
     private LocalDateTime startAt;
 
-    @NotNull
+    @NotNull(message = "종료 일시는 필수 입력값입니다.")
     private LocalDateTime endAt;
 
-    private List<Long> participantUserIds = new ArrayList<>();
+    private List<Long> participantCompanyMemberIds = new ArrayList<>();
 
     @Builder
     private ReservationUpdateRequestDto(
@@ -40,13 +40,13 @@ public class ReservationUpdateRequestDto {
             Long roomId,
             LocalDateTime startAt,
             LocalDateTime endAt,
-            List<Long> participantUserIds
+            List<Long> participantCompanyMemberIds
     ) {
         this.title = title;
         this.roomId = roomId;
         this.startAt = startAt;
         this.endAt = endAt;
-        this.participantUserIds = participantUserIds != null ? participantUserIds : new ArrayList<>();
+        this.participantCompanyMemberIds = participantCompanyMemberIds != null ? participantCompanyMemberIds : new ArrayList<>();
     }
 
     @JsonIgnore

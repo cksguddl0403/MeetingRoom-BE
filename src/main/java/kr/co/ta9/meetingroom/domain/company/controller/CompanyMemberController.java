@@ -19,7 +19,7 @@ public class CompanyMemberController {
 
     private final CompanyService companyService;
 
-    // 회사 구성원 목록 전체 조회
+    // 회사 멤버 목록 전체 조회
     @GetMapping
     public ResponseEntity<ApiResponse<List<CompanyMemberListDto>>> getAllCompanyMembers(@PathVariable Long companyId) {
         return ResponseEntity.ok(ApiResponse.success(companyService.getAllCompanyMembers(companyId)));

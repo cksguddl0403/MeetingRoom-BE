@@ -6,7 +6,6 @@ import lombok.Getter;
 
 @Getter
 public class CompanyMemberListDto {
-
     private Long id;
     private CopanyMemberUserDto user;
     private Role role;

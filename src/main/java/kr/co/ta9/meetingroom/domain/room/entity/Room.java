@@ -8,6 +8,9 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
 @Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -16,7 +19,7 @@ public class Room extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 30)
+    @Column(nullable = false, length = 59)
     private String name; // 이름
 
     @Column(nullable = false)
@@ -50,8 +53,14 @@ public class Room extends BaseEntity {
     }
 
     public void softDelete() {
-        String suffix = "_" + System.currentTimeMillis();
-        this.name = this.name.substring(0, Math.clamp(20 - suffix.length(), 0, this.name.length())) + suffix;
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSSSSS");
+
+        String timestamp = LocalDateTime.now().format(formatter);
+
+        String suffix = "_deleted_" + timestamp;
+
+        this.name += suffix;
+
         this.deleted = true;
     }
 }

@@ -25,7 +25,6 @@ public class CompanyInitializer implements ApplicationRunner {
                 "IT",
                 LocalDate.of(2020, 1, 1),
                 "",
-                100,
                 "123-45-67890"
         ));
     }

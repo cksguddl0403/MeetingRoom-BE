@@ -3,6 +3,8 @@ package kr.co.ta9.meetingroom.domain.equipment.repository;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.dsl.BooleanExpression;
+import com.querydsl.core.types.dsl.StringExpression;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.co.ta9.meetingroom.domain.equipment.dto.EquipmentQueryDto;
 import kr.co.ta9.meetingroom.domain.equipment.entity.QEquipment;
@@ -24,7 +26,11 @@ public class EquipmentRepositoryImpl implements EquipmentRepositoryCustom {
     /*
      * 회사별 비품 단건 정보를 조회합니다.
      *
-     * SELECT e.id, e.name, e.created_at
+     * SELECT e.id,
+     *        CASE WHEN e.is_deleted = TRUE
+     *             THEN CONCAT(SUBSTRING_INDEX(e.name, '_deleted_', 1), ' (삭제 됨)')
+     *             ELSE e.name END AS name,
+     *        e.created_at
      * FROM equipment e
      * WHERE e.id = ?
      *   AND e.is_deleted = FALSE
@@ -36,7 +42,7 @@ public class EquipmentRepositoryImpl implements EquipmentRepositoryCustom {
         EquipmentQueryDto equipmentQueryDto = queryFactory
                 .select(Projections.constructor(EquipmentQueryDto.class,
                         equipment.id,
-                        equipment.name,
+                        equipmentDisplayNameExpr(),
                         equipment.createdAt
                 ))
                 .from(equipment)
@@ -52,7 +58,11 @@ public class EquipmentRepositoryImpl implements EquipmentRepositoryCustom {
     /*
      * 회사별 비품 목록과 전체 건수를 페이징 조회합니다.
      *
-     * SELECT e.id, e.name, e.created_at
+     * SELECT e.id,
+     *        CASE WHEN e.is_deleted = TRUE
+     *             THEN CONCAT(SUBSTRING_INDEX(e.name, '_deleted_', 1), ' (삭제 됨)')
+     *             ELSE e.name END AS name,
+     *        e.created_at
      * FROM equipment e
      * WHERE e.company_id = ?
      *   AND e.is_deleted = FALSE
@@ -72,7 +82,7 @@ public class EquipmentRepositoryImpl implements EquipmentRepositoryCustom {
         List<EquipmentQueryDto> rows = queryFactory
                 .select(Projections.constructor(EquipmentQueryDto.class,
                         equipment.id,
-                        equipment.name,
+                        equipmentDisplayNameExpr(),
                         equipment.createdAt
                 ))
                 .from(equipment)
@@ -101,7 +111,11 @@ public class EquipmentRepositoryImpl implements EquipmentRepositoryCustom {
     /*
      * 회사별 비품 전체 목록을 조회합니다.
      *
-     * SELECT e.id, e.name, e.created_at
+     * SELECT e.id,
+     *        CASE WHEN e.is_deleted = TRUE
+     *             THEN CONCAT(SUBSTRING_INDEX(e.name, '_deleted_', 1), ' (삭제 됨)')
+     *             ELSE e.name END AS name,
+     *        e.created_at
      * FROM equipment e
      * WHERE e.company_id = ?
      *   AND e.is_deleted = FALSE
@@ -111,7 +125,7 @@ public class EquipmentRepositoryImpl implements EquipmentRepositoryCustom {
         return queryFactory
                 .select(Projections.constructor(EquipmentQueryDto.class,
                         equipment.id,
-                        equipment.name,
+                        equipmentDisplayNameExpr(),
                         equipment.createdAt
                 ))
                 .from(equipment)
@@ -172,5 +186,13 @@ public class EquipmentRepositoryImpl implements EquipmentRepositoryCustom {
             }
         }
         return List.of(equipment.id.asc());
+    }
+
+    private StringExpression equipmentDisplayNameExpr() {
+        return Expressions.stringTemplate(
+                "case when {0} = true then concat(function('substring_index', {1}, '_deleted_', 1), ' (삭제 됨)') else {1} end",
+                equipment.deleted,
+                equipment.name
+        );
     }
 }

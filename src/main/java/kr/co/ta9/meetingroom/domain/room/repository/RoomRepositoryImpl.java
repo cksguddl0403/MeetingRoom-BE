@@ -5,6 +5,7 @@ import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.CaseBuilder;
+import com.querydsl.core.types.dsl.Expressions;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.co.ta9.meetingroom.domain.equipment.entity.QRoomEquipment;
@@ -41,7 +42,11 @@ public class RoomRepositoryImpl implements RoomRepositoryCustom {
     /*
      * 특정 시점 기준 회의실 단건 정보를 조회합니다.
      *
-     * SELECT rm.id, rm.name, rm.max_capacity, rm.company_id,
+     * SELECT rm.id,
+     *        CASE WHEN rm.is_deleted = TRUE
+     *             THEN CONCAT(SUBSTRING_INDEX(rm.name, '_deleted_', 1), ' (삭제 됨)')
+     *             ELSE rm.name END AS name,
+     *        rm.max_capacity, rm.company_id,
      *        CASE
      *          WHEN EXISTS (
      *            SELECT 1 FROM inspection i
@@ -68,7 +73,7 @@ public class RoomRepositoryImpl implements RoomRepositoryCustom {
                 .select(Projections.constructor(
                         RoomQueryDto.class,
                         room.id,
-                        room.name,
+                        roomDisplayNameExpression(),
                         room.maxCapacity,
                         room.company.id,
                         resolveRoomStatusExpression(at)
@@ -106,7 +111,11 @@ public class RoomRepositoryImpl implements RoomRepositoryCustom {
      *     )
      *   )
      *
-     * SELECT rm.id, rm.name, rm.max_capacity, rm.company_id,
+     * SELECT rm.id,
+     *        CASE WHEN rm.is_deleted = TRUE
+     *             THEN CONCAT(SUBSTRING_INDEX(rm.name, '_deleted_', 1), ' (삭제 됨)')
+     *             ELSE rm.name END AS name,
+     *        rm.max_capacity, rm.company_id,
      *        CASE
      *          WHEN EXISTS (
      *            SELECT 1 FROM inspection i
@@ -169,7 +178,7 @@ public class RoomRepositoryImpl implements RoomRepositoryCustom {
                 .select(Projections.constructor(
                         RoomQueryDto.class,
                         room.id,
-                        room.name,
+                        roomDisplayNameExpression(),
                         room.maxCapacity,
                         room.company.id,
                         resolveRoomStatusExpression(at)
@@ -192,7 +201,11 @@ public class RoomRepositoryImpl implements RoomRepositoryCustom {
     /*
      * 특정 회사의 회의실 목록을 조회합니다.
      *
-     * SELECT rm.id, rm.name, rm.max_capacity, rm.company_id,
+     * SELECT rm.id,
+     *        CASE WHEN rm.is_deleted = TRUE
+     *             THEN CONCAT(SUBSTRING_INDEX(rm.name, '_deleted_', 1), ' (삭제 됨)')
+     *             ELSE rm.name END AS name,
+     *        rm.max_capacity, rm.company_id,
      *        CASE
      *          WHEN EXISTS (
      *            SELECT 1 FROM inspection i
@@ -219,7 +232,7 @@ public class RoomRepositoryImpl implements RoomRepositoryCustom {
                 .select(Projections.constructor(
                         RoomQueryDto.class,
                         room.id,
-                        room.name,
+                        roomDisplayNameExpression(),
                         room.maxCapacity,
                         room.company.id,
                         resolveRoomStatusExpression(at)
@@ -383,5 +396,13 @@ public class RoomRepositoryImpl implements RoomRepositoryCustom {
                 .when(inUse)
                 .then("사용 중")
                 .otherwise("사용가능");
+    }
+
+    private Expression<String> roomDisplayNameExpression() {
+        return Expressions.stringTemplate(
+                "case when {0} = true then concat(function('substring_index', {1}, '_deleted_', 1), ' (삭제 됨)') else {1} end",
+                room.deleted,
+                room.name
+        );
     }
 }

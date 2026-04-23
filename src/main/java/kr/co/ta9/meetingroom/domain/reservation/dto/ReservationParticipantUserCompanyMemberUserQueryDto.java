@@ -5,8 +5,8 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-public class ReservationParticipantQueryDto {
-    private Long reservationId;
+public class ReservationParticipantUserCompanyMemberUserQueryDto {
     private Long id;
-    private ReservationParticipantUserCompanyMemberQueryDto companyMember;
+    private String nickname;
+    private String profileImageUrl;
 }

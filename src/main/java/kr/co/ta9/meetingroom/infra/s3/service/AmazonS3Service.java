@@ -30,27 +30,52 @@ public class AmazonS3Service {
     @Value("${aws.s3.bucket}")
     private String bucketName;
 
-    // 파일 업로드
+    // 단일 파일 업로드
     public String uploadFile(MultipartFile file) {
-        return uploadSingleFile(file);
+        try {
+            String originalFilename = file.getOriginalFilename();
+
+            String key = originalFilename + "-" + UUID.randomUUID();
+
+            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .contentType(file.getContentType())
+                    .contentLength(file.getSize())
+                    .build();
+
+            s3Client.putObject(
+                    putObjectRequest,
+                    RequestBody.fromInputStream(file.getInputStream(), file.getSize())
+            );
+
+            return s3Client.utilities()
+                    .getUrl(GetUrlRequest.builder()
+                            .bucket(bucketName)
+                            .key(key)
+                            .build())
+                    .toExternalForm();
+        } catch (S3Exception | IOException e) {
+            throw new AwsException(AmazonS3ErrorCode.FAILED_TO_UPLOAD_FILE);
+        }
     }
 
     // 파일 다중 업로드
     public List<String> uploadFiles(List<MultipartFile> files) {
-        List<String> uploadedUrls = new ArrayList<>();
+        ArrayList<String> publicUrls = new ArrayList<>();
+
         for (MultipartFile file : files) {
-            uploadedUrls.add(uploadSingleFile(file));
+            publicUrls.add(uploadFile(file));
         }
-        return uploadedUrls;
+
+        return publicUrls;
     }
 
     // 파일 삭제
     public void deleteFile(String publicUrl) {
-        if (publicUrl == null || publicUrl.isBlank()) {
-            return;
-        }
         try {
             String key = extractObjectKeyFromPublicUrl(publicUrl);
+
             s3Client.deleteObject(DeleteObjectRequest.builder()
                     .bucket(bucketName)
                     .key(key)
@@ -62,9 +87,6 @@ public class AmazonS3Service {
 
     // 파일 다중 삭제
     public void deleteFiles(List<String> publicUrls) {
-        if (publicUrls == null || publicUrls.isEmpty()) {
-            return;
-        }
         for (String publicUrl : publicUrls) {
             deleteFile(publicUrl);
         }
@@ -73,6 +95,7 @@ public class AmazonS3Service {
     // URL에서 객체 키 추출
     private String extractObjectKeyFromPublicUrl(String publicUrl) {
         URI uri;
+
         try {
             uri = URI.create(publicUrl);
         } catch (IllegalArgumentException e) {
@@ -81,6 +104,7 @@ public class AmazonS3Service {
 
         String host = uri.getHost();
         String path = uri.getPath();
+
         if (host == null || path == null || path.isEmpty() || "/".equals(path)) {
             throw new AwsException(AmazonS3ErrorCode.FAILED_TO_DELETE_OBJECT);
         }
@@ -103,36 +127,5 @@ public class AmazonS3Service {
         }
 
         throw new AwsException(AmazonS3ErrorCode.FAILED_TO_DELETE_OBJECT);
-    }
-
-    // 단일 파일 업로드
-    private String uploadSingleFile(MultipartFile file) {
-        try {
-            String originalFilename = file.getOriginalFilename();
-            String safeFileName = (originalFilename == null || originalFilename.isBlank())
-                    ? "file"
-                    : originalFilename;
-            String key = safeFileName + "-" + UUID.randomUUID();
-
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(key)
-                    .contentType(file.getContentType())
-                    .contentLength(file.getSize())
-                    .build();
-
-            s3Client.putObject(
-                    putObjectRequest,
-                    RequestBody.fromInputStream(file.getInputStream(), file.getSize())
-            );
-            return s3Client.utilities()
-                    .getUrl(GetUrlRequest.builder()
-                            .bucket(bucketName)
-                            .key(key)
-                            .build())
-                    .toExternalForm();
-        } catch (S3Exception | IOException e) {
-            throw new AwsException(AmazonS3ErrorCode.FAILED_TO_UPLOAD_FILE);
-        }
     }
 }

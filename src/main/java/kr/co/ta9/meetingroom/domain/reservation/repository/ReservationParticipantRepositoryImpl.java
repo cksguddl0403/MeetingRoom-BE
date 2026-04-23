@@ -8,6 +8,8 @@ import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.co.ta9.meetingroom.domain.file.entity.QFile;
 import kr.co.ta9.meetingroom.domain.file.enums.FileType;
 import kr.co.ta9.meetingroom.domain.reservation.dto.ReservationParticipantQueryDto;
+import kr.co.ta9.meetingroom.domain.reservation.dto.ReservationParticipantUserCompanyMemberQueryDto;
+import kr.co.ta9.meetingroom.domain.reservation.dto.ReservationParticipantUserCompanyMemberUserQueryDto;
 import kr.co.ta9.meetingroom.domain.company.entity.QCompanyMember;
 import kr.co.ta9.meetingroom.domain.reservation.entity.QReservation;
 import kr.co.ta9.meetingroom.domain.reservation.entity.QReservationParticipant;
@@ -53,16 +55,21 @@ public class ReservationParticipantRepositoryImpl implements ReservationParticip
                 .select(Projections.constructor(ReservationParticipantQueryDto.class,
                         reservation.id,
                         reservationParticipant.id,
-                        user.id,
-                        participantDisplayNameExpr(),
-                        JPAExpressions.select(file.url)
-                                .from(file)
-                                .where(
-                                        file.type.eq(FileType.PROFILE),
-                                        file.targetId.eq(user.id)
+                        Projections.constructor(ReservationParticipantUserCompanyMemberQueryDto.class,
+                                participantMember.id,
+                                Projections.constructor(ReservationParticipantUserCompanyMemberUserQueryDto.class,
+                                        user.id,
+                                        participantDisplayNameExpr(),
+                                        JPAExpressions.select(file.url)
+                                                .from(file)
+                                                .where(
+                                                        file.type.eq(FileType.PROFILE),
+                                                        file.targetId.eq(user.id)
+                                                )
+                                                .orderBy(file.id.desc())
+                                                .limit(1)
                                 )
-                                .orderBy(file.id.desc())
-                                .limit(1)
+                        )
                 ))
                 .from(reservationParticipant)
                 .leftJoin(reservationParticipant.reservation, reservation)

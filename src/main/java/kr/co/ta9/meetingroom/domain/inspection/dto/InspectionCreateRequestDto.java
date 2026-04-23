@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class InspectionCreateRequestDto {
 
     @NotBlank(message = "점검 이름을 입력해 주세요.")
-    @Size(max = 50, message = "점검 이름은 최대 50자까지 입력할 수 있습니다.")
+    @Size(max = 40, message = "점검 이름은 최대 40자까지 입력할 수 있습니다.")
     private String name;
 
     @NotNull(message = "시작 일시를 입력해 주세요.")

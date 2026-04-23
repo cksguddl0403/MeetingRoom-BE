@@ -1,7 +1,7 @@
 package kr.co.ta9.meetingroom.domain.reservation.service;
 
+import kr.co.ta9.meetingroom.domain.auth.exception.AuthException;
 import kr.co.ta9.meetingroom.domain.company.entity.CompanyMember;
-import kr.co.ta9.meetingroom.domain.company.exception.CompanyException;
 import kr.co.ta9.meetingroom.domain.company.repository.CompanyMemberRepository;
 import kr.co.ta9.meetingroom.domain.inspection.repository.InspectionRepository;
 import kr.co.ta9.meetingroom.domain.reservation.dto.ReservationCreateRequestDto;
@@ -23,7 +23,7 @@ import kr.co.ta9.meetingroom.domain.room.exception.RoomException;
 import kr.co.ta9.meetingroom.domain.room.repository.RoomRepository;
 import kr.co.ta9.meetingroom.domain.user.entity.User;
 import kr.co.ta9.meetingroom.global.common.response.OffsetPageResponseDto;
-import kr.co.ta9.meetingroom.global.error.code.CompanyErrorCode;
+import kr.co.ta9.meetingroom.global.error.code.AuthErrorCode;
 import kr.co.ta9.meetingroom.global.error.code.ReservationErrorCode;
 import kr.co.ta9.meetingroom.global.error.code.RoomErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -33,11 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -55,46 +51,52 @@ public class ReservationService {
     // 예약 등록
     @Transactional
     public ReservationDto createReservation(User currentUser, Long companyId, ReservationCreateRequestDto reservationCreateRequestDto) {
+        // 인증 여부 확인
+        if(!currentUser.isCertificated()) {
+            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        }
+
+        // 현재 사용자 회사 소속 확인
+        CompanyMember applicantMember = validateCurrentUserBelongsToCompany(currentUser, companyId);
+
+        Long roomId = reservationCreateRequestDto.getRoomId();
+
+        // 회의실이 해당 회사 소속인지 확인
+        Room room = validateRoomBelongingToCompany(roomId, companyId);
+
+        List<Long> distinctParticipantCompanyMemberIds = reservationCreateRequestDto.getParticipantCompanyMemberIds().stream().distinct().toList();
+
+        // 회의실 수용 인원 초과하는지 확인
+        validateAttendeeCountWithinRoomCapacity(room, distinctParticipantCompanyMemberIds.size());
+
+        // 예약 참가자들이 같은 회사 소속인지 확인
+        List<CompanyMember> participantMembers = validateParticipantCompanyMember(companyId, distinctParticipantCompanyMemberIds);
+
         LocalDateTime startAt = reservationCreateRequestDto.getStartAt();
         LocalDateTime endAt = reservationCreateRequestDto.getEndAt();
-        Long roomId = reservationCreateRequestDto.getRoomId();
-        List<Long> participantIds = reservationCreateRequestDto.getParticipantUserIds() == null
-                ? List.of()
-                : reservationCreateRequestDto.getParticipantUserIds();
-        List<Long> distinctParticipantUserIds = participantIds.stream().distinct().toList();
-        Room room = roomRepository.findById(roomId)
-                .orElseThrow(() -> new RoomException(RoomErrorCode.ROOM_NOT_FOUND));
 
-        validateAttendeeCountWithinRoomCapacity(room, distinctParticipantUserIds.size());
-        validateReservationApplicantBelongsToCompany(currentUser, companyId);
-        CompanyMember applicantMember = companyMemberRepository.findByUser_IdAndCompany_Id(currentUser.getId(), companyId)
-                .orElseThrow(() -> new CompanyException(CompanyErrorCode.COMPANY_ACCESS_DENIED));
-        room = loadRoomBelongingToCompany(roomId, companyId);
-        validateParticipantCompanyMembership(companyId, distinctParticipantUserIds);
+        // 요청 일시에 회의실이 점검 중인지 확인
         validateRoomNotUnderInspection(room, startAt, endAt);
+
+        // 요청 일시에 회의실에 이미 확정된 예약이 존재하는지 확인
         validateNoOverlappingReservationOnRoom(room, startAt, endAt, null);
-        validateParticipantsHaveNoScheduleConflict(distinctParticipantUserIds, startAt, endAt, null);
 
-        List<CompanyMember> participantMembers = distinctParticipantUserIds.isEmpty()
-                ? List.of()
-                : companyMemberRepository.findAllByUser_IdInAndCompany_Id(distinctParticipantUserIds, companyId);
-        if (participantMembers.size() != distinctParticipantUserIds.size()) {
-            throw new ReservationException(ReservationErrorCode.RESERVATION_PARTICIPANT_NOT_IN_COMPANY);
-        }
-        Map<Long, CompanyMember> participantMemberByUserId = participantMembers.stream()
-                .collect(Collectors.toMap(cm -> cm.getUser().getId(), cm -> cm, (a, b) -> a));
+        // 요청 일시에 참가자들이 다른 예약에 참여 중인지 확인
+        validateParticipantsHaveNoScheduleConflict(distinctParticipantCompanyMemberIds, startAt, endAt, null);
 
-        Reservation reservation = Reservation.createReservation(
-                applicantMember, room, reservationCreateRequestDto.getTitle(), startAt, endAt);
+        // 예약 생성
+        Reservation reservation = Reservation.createReservation(applicantMember, room, reservationCreateRequestDto.getTitle(), startAt, endAt);
 
+        // 에약 저장
         reservationRepository.save(reservation);
 
-        List<ReservationParticipant> participants = new ArrayList<>(distinctParticipantUserIds.size());
-        for (Long participantUserId : distinctParticipantUserIds) {
-            CompanyMember participantMember = participantMemberByUserId.get(participantUserId);
-            participants.add(reservationParticipantRepository.save(
-                    ReservationParticipant.createReservationParticipant(reservation, participantMember)));
-        }
+        // 예약 참가자 생성
+        List<ReservationParticipant> participants = participantMembers.stream()
+                .map(cm -> ReservationParticipant.createReservationParticipant(reservation, cm))
+                .toList();
+
+        // 예약 참가자 저장
+        reservationParticipantRepository.saveAll(participants);
 
         return reservationMapper.toDto(reservation, participants);
     }
@@ -106,9 +108,13 @@ public class ReservationService {
             Pageable pageable,
             ReservationListSearchRequestDto reservationListSearchRequestDto
     ) {
-        if (!companyMemberRepository.existsByUser_IdAndCompany_Id(currentUser.getId(), companyId)) {
-            throw new CompanyException(CompanyErrorCode.COMPANY_ACCESS_DENIED);
+        // 인증 여부 확인
+        if(!currentUser.isCertificated()) {
+            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
         }
+
+        // 현재 사용자 회사 소속 확인
+        validateCurrentUserBelongsToCompany(currentUser, companyId);
 
         Page<ReservationQueryDto> page = reservationRepository.getReservations(
                 currentUser.getId(), companyId, reservationListSearchRequestDto, pageable);
@@ -148,122 +154,157 @@ public class ReservationService {
             Long reservationId,
             ReservationUpdateRequestDto reservationUpdateRequestDto
     ) {
-        validateReservationApplicantBelongsToCompany(currentUser, companyId);
+        // 인증 여부 확인
+        if (!currentUser.isCertificated()) {
+            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        }
 
+        // 예약 조회
         Reservation reservation = reservationRepository.findByIdAndRoom_Company_Id(reservationId, companyId)
                 .orElseThrow(() -> new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND));
 
+        // 예약 신청자와 현재 사용자가 같은지 확인
         if (!reservation.getCompanyMember().getUser().getId().equals(currentUser.getId())) {
             throw new ReservationException(ReservationErrorCode.RESERVATION_NOT_AUTHORIZED);
         }
-        if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
+
+        // 이미 취소된 예약인지 확인
+        if (reservation.getStatus() == ReservationStatus.CANCELED) {
             throw new ReservationException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE_CANCELED);
         }
+
+        // 예약이 이미 시작되지 않았는지 확인
         validateReservationNotStarted(reservation.getStartAt(), ReservationErrorCode.RESERVATION_NOT_MODIFIABLE_STARTED);
+
+        // 현재 사용자 회사 소속 확인
+        validateCurrentUserBelongsToCompany(currentUser, companyId);
+
+        Long roomId = reservationUpdateRequestDto.getRoomId();
+
+        // 회의실이 해당 회사 소속인지 확인
+        Room room = validateRoomBelongingToCompany(roomId, companyId);
+
+        List<Long> distinctParticipantCompanyMemberIds =  reservationUpdateRequestDto.getParticipantCompanyMemberIds().stream().distinct().toList();
+
+        // 회의실 수용 인원 초과하는지 확인
+        validateAttendeeCountWithinRoomCapacity(room, distinctParticipantCompanyMemberIds.size());
+
+        // 예약 참가자들이 같은 회사 소속인지 확인
+        List<CompanyMember> participantMembers = validateParticipantCompanyMember(companyId, distinctParticipantCompanyMemberIds);
 
         LocalDateTime startAt = reservationUpdateRequestDto.getStartAt();
         LocalDateTime endAt = reservationUpdateRequestDto.getEndAt();
 
-        Room room = loadRoomBelongingToCompany(reservationUpdateRequestDto.getRoomId(), companyId);
-        List<Long> participantIds = reservationUpdateRequestDto.getParticipantUserIds() == null
-                ? List.of()
-                : reservationUpdateRequestDto.getParticipantUserIds();
-        List<Long> distinctParticipantUserIds = participantIds.stream().distinct().toList();
-
-        validateParticipantCompanyMembership(companyId, distinctParticipantUserIds);
+        // 요청 일시에 회의실이 점검 중인지 확인
         validateRoomNotUnderInspection(room, startAt, endAt);
+
+        // 요청 일시에 회의실에 이미 확정된 예약이 존재하는지 확인
         validateNoOverlappingReservationOnRoom(room, startAt, endAt, reservationId);
-        validateParticipantsHaveNoScheduleConflict(distinctParticipantUserIds, startAt, endAt, reservationId);
-        validateAttendeeCountWithinRoomCapacity(room, distinctParticipantUserIds.size());
 
-        List<CompanyMember> participantMembers = distinctParticipantUserIds.isEmpty()
-                ? List.of()
-                : companyMemberRepository.findAllByUser_IdInAndCompany_Id(distinctParticipantUserIds, companyId);
-        if (participantMembers.size() != distinctParticipantUserIds.size()) {
-            throw new ReservationException(ReservationErrorCode.RESERVATION_PARTICIPANT_NOT_IN_COMPANY);
-        }
-        Map<Long, CompanyMember> participantMemberByUserId = participantMembers.stream()
-                .collect(Collectors.toMap(cm -> cm.getUser().getId(), cm -> cm, (a, b) -> a));
+        // 요청 일시에 참가자들이 다른 예약에 참여 중인지 확인
+        validateParticipantsHaveNoScheduleConflict(distinctParticipantCompanyMemberIds, startAt, endAt, reservationId);
 
+        // 예약 업데이트
+        reservation.update(room, reservationUpdateRequestDto.getTitle(), startAt, endAt);
+
+        // 기존 예약 참가자 삭제
         List<Long> participantRowIds = reservationParticipantRepository.findIdsByReservationId(reservationId);
         if (!participantRowIds.isEmpty()) {
             reservationParticipantRepository.deleteByIds(participantRowIds);
         }
 
-        reservation.update(room, reservationUpdateRequestDto.getTitle(), startAt, endAt);
+        // 예약 참가자 생성
+        List<ReservationParticipant> participants = participantMembers.stream()
+                .map(cm -> ReservationParticipant.createReservationParticipant(reservation, cm))
+                .toList();
 
-        List<ReservationParticipant> participants = new ArrayList<>(distinctParticipantUserIds.size());
+        // 예약 참가자 저장
+        reservationParticipantRepository.saveAll(participants);
 
-        for (Long participantUserId : distinctParticipantUserIds) {
-            CompanyMember participantMember = participantMemberByUserId.get(participantUserId);
-            participants.add(reservationParticipantRepository.save(
-                    ReservationParticipant.createReservationParticipant(reservation, participantMember)));
-        }
-
-        List<ReservationParticipantQueryDto> participantQueryDtos =
-                reservationParticipantRepository.getReservationParticipantsByReservationIds(List.of(reservation.getId()));
-
-        ReservationQueryDto reservationQueryDto
-                = reservationRepository.getReservationById(currentUser.getId(), reservationId)
-                .orElseThrow(() -> new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND));
-
-        return reservationMapper.toDto(reservationQueryDto, participantQueryDtos);
+        return reservationMapper.toDto(reservation, participants);
     }
 
     // 예약 취소
     @Transactional
     public ReservationDto cancelReservation(User currentUser, Long companyId, Long reservationId) {
-        validateReservationApplicantBelongsToCompany(currentUser, companyId);
+        // 인증 여부 확인
+        if (!currentUser.isCertificated()) {
+            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        }
 
+        // 예약 조회
         Reservation reservation = reservationRepository.findByIdAndRoom_Company_Id(reservationId, companyId)
                 .orElseThrow(() -> new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND));
 
+        // 예약 신청자와 현재 사용자가 같은지 확인
         if (!reservation.getCompanyMember().getUser().getId().equals(currentUser.getId())) {
             throw new ReservationException(ReservationErrorCode.RESERVATION_NOT_AUTHORIZED);
         }
 
+        // 현재 사용자 회사 소속 확인
+        validateCurrentUserBelongsToCompany(currentUser, companyId);
+
+        // 이미 취소된 예약인지 확인
         if (reservation.getStatus() == ReservationStatus.CANCELED) {
             throw new ReservationException(ReservationErrorCode.RESERVATION_NOT_CANCELLABLE_ALREADY_CANCELED);
         }
+
+        // 예약이 이미 시작되지 않았는지 확인
         validateReservationNotStarted(reservation.getStartAt(), ReservationErrorCode.RESERVATION_NOT_CANCELLABLE_STARTED);
-        reservation.markCanceled();
 
-        List<ReservationParticipantQueryDto> participantQueryDtos =
-                reservationParticipantRepository.getReservationParticipantsByReservationIds(List.of(reservation.getId()));
+        // 예약 취소
+        reservation.cancel();
 
+        // 예약 조회
         ReservationQueryDto reservationQueryDto
                 = reservationRepository.getReservationById(currentUser.getId(), reservationId)
                 .orElseThrow(() -> new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND));
 
+        // 예약 참가자 조회
+        List<ReservationParticipantQueryDto> participantQueryDtos =
+                reservationParticipantRepository.getReservationParticipantsByReservationIds(List.of(reservation.getId()));
+
         return reservationMapper.toDto(reservationQueryDto, participantQueryDtos);
     }
 
-    private void validateReservationNotStarted(LocalDateTime startAt, ReservationErrorCode reservationErrorCode) {
-        if (!LocalDateTime.now().isBefore(startAt)) {
-            throw new ReservationException(reservationErrorCode);
-        }
-    }
+    // 현재 사용자 회사 소속 확인
+    private CompanyMember validateCurrentUserBelongsToCompany(User currentUser, Long companyId) {
+        Optional<CompanyMember> companyMember = companyMemberRepository.findByUser_IdAndCompany_Id(currentUser.getId(), companyId);
 
-    // 예약 신청자 회사 소속 확인
-    private void validateReservationApplicantBelongsToCompany(User applicant, Long companyId) {
-        if (!companyMemberRepository.existsByUser_IdAndCompany_Id(applicant.getId(), companyId)) {
-            throw new CompanyException(CompanyErrorCode.COMPANY_ACCESS_DENIED);
+        if (companyMember.isEmpty()) {
+            throw new ReservationException(ReservationErrorCode.RESERVATION_NOT_AUTHORIZED);
         }
+
+        return companyMember.get();
     }
 
     // 회사 소속 회의실 조회
-    private Room loadRoomBelongingToCompany(Long roomId, Long companyId) {
-        return roomRepository.findByIdAndCompany_Id(roomId, companyId)
-                .orElseThrow(() -> new RoomException(RoomErrorCode.ROOM_NOT_FOUND));
+    private Room validateRoomBelongingToCompany(Long roomId, Long companyId) {
+        Optional<Room> room = roomRepository.findByIdAndCompany_Id(roomId, companyId);
+
+        if(room.isEmpty()) {
+            throw new RoomException(RoomErrorCode.ROOM_NOT_IN_COMPANY);
+        }
+
+        return room.get();
+    }
+
+    // 회의실 수용 인원 확인
+    private void validateAttendeeCountWithinRoomCapacity(Room room, int participantCount) {
+        if (participantCount > room.getMaxCapacity()) {
+            throw new ReservationException(ReservationErrorCode.RESERVATION_CAPACITY_EXCEEDED);
+        }
     }
 
     // 참가자 회사 소속 확인
-    private void validateParticipantCompanyMembership(Long companyId, List<Long> participantUserIds) {
-        for (Long pid : participantUserIds) {
-            if (!companyMemberRepository.existsByUser_IdAndCompany_Id(pid, companyId)) {
-                throw new ReservationException(ReservationErrorCode.RESERVATION_PARTICIPANT_NOT_IN_COMPANY);
-            }
+    private List<CompanyMember> validateParticipantCompanyMember(Long companyId, List<Long> participantComapnyIds) {
+        List<CompanyMember> participantMembers = companyMemberRepository.findAllByIdInAndCompany_Id(participantComapnyIds, companyId);
+
+        if (participantMembers.size() != participantComapnyIds.size()) {
+            throw new ReservationException(ReservationErrorCode.RESERVATION_PARTICIPANT_NOT_IN_COMPANY);
         }
+
+        return participantMembers;
     }
 
     // 회의실 점검 시간 확인
@@ -292,31 +333,28 @@ public class ReservationService {
 
     // 참가자 일정 충돌 확인
     private void validateParticipantsHaveNoScheduleConflict(
-            List<Long> participantUserIds,
+            List<Long> participantCompanyIds,
             LocalDateTime startAt,
             LocalDateTime endAt,
             Long excludeReservationId
     ) {
-        if (participantUserIds == null || participantUserIds.isEmpty()) {
+        if (participantCompanyIds == null || participantCompanyIds.isEmpty()) {
             return;
         }
 
-        Set<Long> busy = new HashSet<>();
+        Set<Long> busy = new HashSet<>(reservationRepository.findCompanyMemberIdsWithOverlappingReservationAsParticipant(
+                ReservationStatus.CONFIRMED, startAt, endAt, participantCompanyIds, excludeReservationId));
 
-        busy.addAll(reservationRepository.findUserIdsWithOverlappingReservationAsParticipant(
-                ReservationStatus.CONFIRMED, startAt, endAt, participantUserIds, excludeReservationId));
-
-        for (Long pid : participantUserIds) {
-            if (busy.contains(pid)) {
-                throw new ReservationException(ReservationErrorCode.RESERVATION_PARTICIPANT_UNAVAILABLE);
-            }
+        if (!busy.isEmpty()) {
+            throw new ReservationException(ReservationErrorCode.RESERVATION_PARTICIPANT_UNAVAILABLE);
         }
     }
 
-    // 회의실 수용 인원 확인 (예약 신청자 1명 + 참가자)
-    private void validateAttendeeCountWithinRoomCapacity(Room room, int participantCount) {
-        if (1 + participantCount > room.getMaxCapacity()) {
-            throw new ReservationException(ReservationErrorCode.RESERVATION_CAPACITY_EXCEEDED);
+    // 예약이 시작되지 않았는지 확인
+    private void validateReservationNotStarted(LocalDateTime startAt, ReservationErrorCode reservationErrorCode) {
+        if (!LocalDateTime.now().isBefore(startAt)) {
+            throw new ReservationException(reservationErrorCode);
         }
     }
+
 }

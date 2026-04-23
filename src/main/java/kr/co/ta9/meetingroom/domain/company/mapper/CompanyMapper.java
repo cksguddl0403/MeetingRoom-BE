@@ -19,7 +19,6 @@ public interface CompanyMapper {
                 .industry(company.getIndustry())
                 .foundedDate(company.getFoundedDate())
                 .introduction(company.getIntroduction())
-                .employeeCount(company.getEmployeeCount())
                 .businessRegistrationNumber(company.getBusinessRegistrationNumber())
                 .build();
     }

@@ -33,9 +33,6 @@ public class Company extends BaseEntity {
     @Column(length = 200)
     private String introduction;
 
-    @Column(nullable = false)
-    private int employeeCount;
-
     @Column(nullable = false, unique = true, length = 12)
     private String businessRegistrationNumber;
 
@@ -52,7 +49,6 @@ public class Company extends BaseEntity {
         this.industry = industry;
         this.foundedDate = foundedDate;
         this.introduction = introduction;
-        this.employeeCount = employeeCount;
         this.businessRegistrationNumber = businessRegistrationNumber;
     }
 
@@ -61,7 +57,6 @@ public class Company extends BaseEntity {
             String industry,
             LocalDate foundedDate,
             String introduction,
-            int employeeCount,
             String businessRegistrationNumber
     ) {
         return Company.builder()
@@ -69,7 +64,6 @@ public class Company extends BaseEntity {
                 .industry(industry)
                 .foundedDate(foundedDate)
                 .introduction(introduction)
-                .employeeCount(employeeCount)
                 .businessRegistrationNumber(businessRegistrationNumber)
                 .build();
     }

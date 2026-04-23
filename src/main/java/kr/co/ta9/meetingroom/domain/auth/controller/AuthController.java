@@ -32,7 +32,6 @@ public class AuthController {
 
     // 로그아웃
     @PostMapping("/sign-out")
-    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request, HttpServletResponse response) {
         authService.logout(request, response);
         return ResponseEntity.noContent().build();

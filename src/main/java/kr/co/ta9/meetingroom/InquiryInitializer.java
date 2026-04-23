@@ -31,7 +31,7 @@ public class InquiryInitializer implements ApplicationRunner {
         User user = userRepository.findByLoginId("testuser01")
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
-        Category category = categoryRepository.findById(1L)
+        Category category = categoryRepository.findById(3L)
                 .orElseThrow(() -> new CategoryException(CategoryErrorCode.CATEGORY_NOT_FOUND));
 
         inquiryRepository.save(Inquiry.createInquiry(

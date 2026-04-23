@@ -14,6 +14,7 @@ import kr.co.ta9.meetingroom.domain.user.entity.User;
 import kr.co.ta9.meetingroom.domain.user.exception.UserException;
 import kr.co.ta9.meetingroom.domain.user.mapper.UserMapper;
 import kr.co.ta9.meetingroom.domain.user.repository.UserRepository;
+import kr.co.ta9.meetingroom.global.error.code.AuthErrorCode;
 import kr.co.ta9.meetingroom.global.error.code.UserErrorCode;
 import kr.co.ta9.meetingroom.infra.s3.service.AmazonS3Service;
 import lombok.RequiredArgsConstructor;
@@ -81,6 +82,7 @@ public class UserService {
         fileRepository.save(employmentCertificate);
 
         Optional<CompanyMember> companyMember = companyMemberRepository.findWithCompanyByUser_Id(savedUser.getId());
+
         return userMapper.toDto(
                 savedUser,
                 companyMember.map(CompanyMember::getCompany).orElse(null),
@@ -116,6 +118,10 @@ public class UserService {
     // 사용자 정보 수정
     @Transactional
     public UserDto updateUserInfo(User currentUser, UserUpdateRequestDto userUpdateRequestDto) {
+        if(currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
+        }
+
         User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 

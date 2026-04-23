@@ -9,20 +9,21 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
 @NoArgsConstructor
 public class RoomUpdateRequestDto {
 
-    @Size(max = 20, message = "회의실 이름은 최대 20자까지 입력할 수 있습니다.")
+    @Size(max = 30, message = "회의실 이름은 최대 30자까지 입력할 수 있습니다.")
     private String name;
 
     @Positive(message = "최대 수용 인원 수는 1 이상이어야 합니다.")
     private Integer maxCapacity;
 
     @Valid
-    private List<RoomEquipmentItemDto> items;
+    private List<RoomEquipmentItemDto> items = new ArrayList<>();
 
     @Builder
     private RoomUpdateRequestDto(String name, Integer maxCapacity, List<RoomEquipmentItemDto> items) {

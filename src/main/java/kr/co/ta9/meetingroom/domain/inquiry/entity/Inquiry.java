@@ -66,7 +66,8 @@ public class Inquiry extends BaseEntity {
                 .build();
     }
 
-    public void update(String title, String content, boolean secret) {
+    public void update(Category inquiryCategory, String title, String content, boolean secret) {
+        this.inquiryCategory = inquiryCategory;
         this.title = title;
         this.content = content;
         this.secret = secret;

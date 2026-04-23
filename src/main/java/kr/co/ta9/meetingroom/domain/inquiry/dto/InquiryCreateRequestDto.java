@@ -11,14 +11,14 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class InquiryCreateRequestDto {
 
-    @NotNull
+    @NotNull(message = "문의 카테고리는 필수입니다.")
     private Long inquiryCategoryId;
 
-    @NotBlank
-    @Size(max = 20, message = "제목은 공백 포함 최대 20자까지 입력할 수 있습니다.")
+    @NotBlank(message = "제목은 공백이 아니어야 합니다.")
+    @Size(max = 50, message = "제목은 공백 포함 최대 50자까지 입력할 수 있습니다.")
     private String title;
 
-    @NotBlank
+    @NotBlank(message = "내용은 공백이 아니어야 합니다.")
     private String content;
 
     @NotNull(message = "공개 여부는 필수입니다.")

@@ -69,7 +69,7 @@ public class Reservation extends BaseEntity {
         this.endAt = endAt;
     }
 
-    public void markCanceled() {
+    public void cancel() {
         this.status = ReservationStatus.CANCELED;
     }
 }
