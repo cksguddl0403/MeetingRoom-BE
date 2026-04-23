@@ -14,7 +14,6 @@ import kr.co.ta9.meetingroom.domain.user.entity.User;
 import kr.co.ta9.meetingroom.domain.user.exception.UserException;
 import kr.co.ta9.meetingroom.domain.user.mapper.UserMapper;
 import kr.co.ta9.meetingroom.domain.user.repository.UserRepository;
-import kr.co.ta9.meetingroom.global.error.code.AuthErrorCode;
 import kr.co.ta9.meetingroom.global.error.code.UserErrorCode;
 import kr.co.ta9.meetingroom.infra.s3.service.AmazonS3Service;
 import lombok.RequiredArgsConstructor;
@@ -45,19 +44,36 @@ public class UserService {
             UserCreateRequestDto userCreateRequestDto,
             MultipartFile employmentCertificateFile
     ) {
-        userRepository.findByLoginId(userCreateRequestDto.getLoginId()).ifPresent(user -> {
-            throw new UserException(UserErrorCode.DUPLICATE_USER);
-        });
+        // 로그인 아이디 중복 확인
+        if(userRepository.existsByLoginId(userCreateRequestDto.getLoginId())) {
+            throw new UserException(UserErrorCode.DUPLICATE_LOGIN_ID);
+        }
+
+        // 닉네임 중복 확인
+        if(userRepository.existsByNickname(userCreateRequestDto.getNickname())) {
+            throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
+        }
+
+        // 이메일 중복 확인
+        if(userRepository.existsByEmail(userCreateRequestDto.getEmail())) {
+            throw new UserException(UserErrorCode.DUPLICATE_EMAIL);
+        }
 
         String verificationKey = EmailVerificationPurpose.SIGNUP.verifiedKey(userCreateRequestDto.getVerificationId());
+
+        // Redis에서 검증된 이메일 조회
         String verifiedEmail = stringRedisTemplate.opsForValue().get(verificationKey);
+
+        // 검증된 이메일과 일치하는지 확인
         if (verifiedEmail == null
                 || !verifiedEmail.equalsIgnoreCase(userCreateRequestDto.getEmail())) {
             throw new UserException(UserErrorCode.INVALID_EMAIL_VERIFICATION);
         }
 
+        // 검증된 이메일 삭제
         stringRedisTemplate.delete(verificationKey);
 
+        // 사용자 생성
         User user = User.createUser(
                 userCreateRequestDto.getLoginId(),
                 passwordEncoder.encode(userCreateRequestDto.getPassword()),
@@ -66,10 +82,13 @@ public class UserService {
                 userCreateRequestDto.getEmail()
         );
 
+        // 사용자 저장
         User savedUser = userRepository.save(user);
 
+        // 재직 증명서 파일 AWS S3 업로드
         String employmentCertificateFilePublicUrl = amazonS3Service.uploadFile(employmentCertificateFile);
 
+        // 파일 생성
         File employmentCertificate = File.createFile(
                 employmentCertificateFile.getOriginalFilename(),
                 employmentCertificateFile.getSize(),
@@ -79,8 +98,10 @@ public class UserService {
                 savedUser.getId()
         );
 
+        // 파일 저장
         fileRepository.save(employmentCertificate);
 
+        // 회사 멤버 정보와 회사 정보 조회
         Optional<CompanyMember> companyMember = companyMemberRepository.findWithCompanyByUser_Id(savedUser.getId());
 
         return userMapper.toDto(
@@ -92,7 +113,9 @@ public class UserService {
 
     // 사용자 정보 조회
     public UserDto getUserInfo(User currentUser) {
+        // 회사 멤버 정보와 회사 정보 조회
         Optional<CompanyMember> companyMember = companyMemberRepository.findWithCompanyByUser_Id(currentUser.getId());
+
         return userMapper.toDto(
                 currentUser,
                 companyMember.map(CompanyMember::getCompany).orElse(null),
@@ -102,6 +125,7 @@ public class UserService {
 
     // 사용자 프로필 조회
     public UserProfileDto getUserProfile(User currentUser) {
+        // 프로필 이미지 조회
         Optional<File> existingProfile = fileRepository.findByTypeAndTargetId(
                 FileType.PROFILE,
                 currentUser.getId()
@@ -118,31 +142,33 @@ public class UserService {
     // 사용자 정보 수정
     @Transactional
     public UserDto updateUserInfo(User currentUser, UserUpdateRequestDto userUpdateRequestDto) {
-        if(currentUser.isCertificated()) {
-            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
-        }
-
+        // 사용자 조회
         User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
         String newPassword = userUpdateRequestDto.getNewPassword();
+        String encodedNewPassword = null;
+        // 새 비밀번호가 입력된 경우
         if (StringUtils.hasText(newPassword)) {
+           /// 기존 비밀번호를 입력하지 않는 경우 예외 발생
             String currentPassword = userUpdateRequestDto.getCurrentPassword();
             if (!StringUtils.hasText(currentPassword)) {
                 throw new UserException(UserErrorCode.CURRENT_PASSWORD_REQUIRED);
             }
 
+            // 기존 비밀번호가 일치하지 않는 경우 예외 발생
             if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
                 throw new UserException(UserErrorCode.INVALID_CURRENT_PASSWORD);
             }
+
+            // 새 비밀번호 암호화
+            encodedNewPassword = passwordEncoder.encode(newPassword);
         }
 
-        String encodedNewPassword = StringUtils.hasText(newPassword)
-                ? passwordEncoder.encode(newPassword)
-                : null;
-
+        // 사용자 정보 업데이트
         user.updateInfo(encodedNewPassword, userUpdateRequestDto.getName());
 
+        // 회사 멤버 정보와 회사 정보 조회
         Optional<CompanyMember> companyMember = companyMemberRepository.findWithCompanyByUser_Id(user.getId());
 
         return userMapper.toDto(
@@ -159,83 +185,112 @@ public class UserService {
             UserProfileUpdateRequestDto userProfileUpdateRequestDto,
             MultipartFile profileImageFile
     ) {
+        // 사용자 조회
         User user = userRepository.findById(currentUser.getId())
                 .orElseThrow(() -> new UserException(UserErrorCode.USER_NOT_FOUND));
 
-        // 새로운 닉네임이 현재 닉네임과 다르고, 이미 존재하는 닉네임인 경우 예외 처리
-        if(!user.getNickname().equals(userProfileUpdateRequestDto.getNickname())) {
-            if(userRepository.existsByNickname(userProfileUpdateRequestDto.getNickname())) {
+        // 닉네임 중복 확인
+        if (!user.getNickname().equals(userProfileUpdateRequestDto.getNickname())) {
+            if (userRepository.existsByNickname(userProfileUpdateRequestDto.getNickname())) {
                 throw new UserException(UserErrorCode.DUPLICATE_NICKNAME);
             }
         }
 
+        // 사용자 프로필 업데이트
         user.updateProfile(userProfileUpdateRequestDto.getNickname());
 
-        String newProfileUrl = null;
+        // 기존 프로필 이미지 조회
+        Optional<File> existingProfile = fileRepository.findByTypeAndTargetId(
+                FileType.PROFILE,
+                user.getId()
+        );
 
+        String previousUrl = existingProfile.map(File::getUrl).orElse(null);
+
+        // 새로운 프로필 이미지 파일을 업로드한 경우
         if (profileImageFile != null && !profileImageFile.isEmpty()) {
+            // 이미지 확장자 및 ContentType 검증
+            validateImagesFiles(profileImageFile);
+
             String originalName = profileImageFile.getOriginalFilename();
-            String name = StringUtils.hasText(originalName) ? originalName : "profile";
+
+            long size = profileImageFile.getSize();
 
             String extension = Optional.ofNullable(StringUtils.getFilenameExtension(originalName))
                     .orElse("")
                     .toLowerCase();
 
-            boolean validExtension = extension.equals("jpg")
-                    || extension.equals("jpeg")
-                    || extension.equals("png")
-                    || extension.equals("webp");
-            if (!validExtension) {
-                throw new UserException(UserErrorCode.USER_PROFILE_IMAGE_INVALID);
-            }
+            // 이미지 AWS 업로드
+            String newProfileUrl = amazonS3Service.uploadFile(profileImageFile);
 
-            String contentType = profileImageFile.getContentType();
-            if (contentType != null && !contentType.isBlank()) {
-                String normalizedContentType = contentType.toLowerCase();
-                boolean validMimeType = ((extension.equals("jpg") || extension.equals("jpeg"))
-                        && normalizedContentType.equals("image/jpeg"))
-                        || (extension.equals("png")
-                        && normalizedContentType.equals("image/png"))
-                        || (extension.equals("webp")
-                        && normalizedContentType.equals("image/webp"));
-
-                if (!validMimeType) {
-                    throw new UserException(UserErrorCode.USER_PROFILE_IMAGE_INVALID);
-                }
-            }
-
-            newProfileUrl = amazonS3Service.uploadFile(profileImageFile);
-            long size = profileImageFile.getSize();
-
-            Optional<File> existingProfile = fileRepository.findByTypeAndTargetId(
-                    FileType.PROFILE,
-                    user.getId()
-            );
-            String previousUrl = existingProfile.map(File::getUrl).orElse(null);
-
+            // 기존 프로필 이미지가 존재하는 경우 업데이트 및 File 삭제
             if (existingProfile.isPresent()) {
                 File profile = existingProfile.get();
-                profile.updateImage(name, size, extension, newProfileUrl);
+                // 기존 프로필 이미지 삭제
+                amazonS3Service.deleteFile(previousUrl);
+
+                // 기존 프로필 이미지 업데이트
+                profile.updateImage(originalName, size, extension, newProfileUrl);
+
             } else {
-                fileRepository.save(File.createFile(
-                        name,
+                // File 생성
+                File file = File.createFile(
+                        originalName,
                         size,
                         extension,
                         newProfileUrl,
                         FileType.PROFILE,
                         user.getId()
-                ));
-            }
+                );
 
-            if (previousUrl != null) {
-                amazonS3Service.deleteFile(previousUrl);
-                fileRepository.delete(existingProfile.get());
+                // File 저장
+                fileRepository.save(file);
             }
+            return UserProfileDto.builder()
+                    .nickname(user.getNickname())
+                    .profileImageUrl(newProfileUrl)
+                    .build();
         }
 
         return UserProfileDto.builder()
                 .nickname(user.getNickname())
-                .profileImageUrl(newProfileUrl)
+                .profileImageUrl(previousUrl)
                 .build();
+    }
+
+    // 프로필 이미지 확장자 및 ContentType 검증
+    private void validateImagesFiles(MultipartFile ImageFile) {
+        String originalName = ImageFile.getOriginalFilename();
+        String extension = StringUtils.getFilenameExtension(originalName);
+
+        if (extension == null) {
+            throw new UserException(UserErrorCode.USER_PROFILE_IMAGE_FORMAT_INVALID);
+        }
+
+        extension = extension.toLowerCase();
+
+        boolean validExtension = extension.equals("jpg")
+                || extension.equals("jpeg")
+                || extension.equals("png")
+                || extension.equals("webp");
+
+        if (!validExtension) {
+            throw new UserException(UserErrorCode.USER_PROFILE_IMAGE_FORMAT_INVALID);
+        }
+
+        String contentType = ImageFile.getContentType();
+        if (contentType != null && !contentType.isBlank()) {
+            String normalizedContentType = contentType.toLowerCase();
+            boolean validMimeType = ((extension.equals("jpg") || extension.equals("jpeg"))
+                    && normalizedContentType.equals("image/jpeg"))
+                    || (extension.equals("png")
+                    && normalizedContentType.equals("image/png"))
+                    || (extension.equals("webp")
+                    && normalizedContentType.equals("image/webp"));
+
+            if (!validMimeType) {
+                throw new UserException(UserErrorCode.USER_PROFILE_IMAGE_FORMAT_INVALID);
+            }
+        }
     }
 }

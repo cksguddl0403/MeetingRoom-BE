@@ -1,6 +1,5 @@
 package kr.co.ta9.meetingroom.domain.notice.service;
 
-import kr.co.ta9.meetingroom.domain.auth.exception.AuthException;
 import kr.co.ta9.meetingroom.domain.notice.dto.NoticeDto;
 import kr.co.ta9.meetingroom.domain.notice.dto.NoticeListDto;
 import kr.co.ta9.meetingroom.domain.notice.dto.NoticeListSearchRequestDto;
@@ -9,9 +8,10 @@ import kr.co.ta9.meetingroom.domain.notice.exception.NoticeException;
 import kr.co.ta9.meetingroom.domain.notice.mapper.NoticeMapper;
 import kr.co.ta9.meetingroom.domain.notice.repository.NoticeRepository;
 import kr.co.ta9.meetingroom.domain.user.entity.User;
+import kr.co.ta9.meetingroom.domain.user.exception.UserException;
 import kr.co.ta9.meetingroom.global.common.response.OffsetPageResponseDto;
-import kr.co.ta9.meetingroom.global.error.code.AuthErrorCode;
 import kr.co.ta9.meetingroom.global.error.code.NoticeErrorCode;
+import kr.co.ta9.meetingroom.global.error.code.UserErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -32,8 +32,8 @@ public class NoticeService {
     @Transactional
     public NoticeDto getNotice(User currentUser,  Long noticeId) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 공지사항 조회 (카테고리 정보 포함)
@@ -47,8 +47,8 @@ public class NoticeService {
     // 공지사항 목록 조회
     public OffsetPageResponseDto<NoticeListDto> getNotices(User currentUser, Pageable pageable, NoticeListSearchRequestDto noticeListSearchRequestDto) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 공지사항 목록 조회 (카테고리 정보 포함)

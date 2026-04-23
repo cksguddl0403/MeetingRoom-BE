@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 @RequiredArgsConstructor
 public class EmailVerificationService {
     private static final Duration CODE_TTL = Duration.ofMinutes(5);
-    private static final Duration VERIFIED_TTL = Duration.ofMinutes(10);
+    private static final Duration VERIFIED_TTL = Duration.ofMinutes(30);
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final StringRedisTemplate stringRedisTemplate;

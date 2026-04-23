@@ -17,8 +17,7 @@ public enum ReservationErrorCode implements ErrorCode {
     RESERVATION_NOT_MODIFIABLE_CANCELED(HttpStatus.BAD_REQUEST, "RESERVATION-10", "취소된 예약은 수정할 수 없습니다."),
     RESERVATION_NOT_MODIFIABLE_STARTED(HttpStatus.BAD_REQUEST, "RESERVATION-13", "시작된 예약은 수정할 수 없습니다."),
     RESERVATION_NOT_CANCELLABLE_ALREADY_CANCELED(HttpStatus.BAD_REQUEST, "RESERVATION-11", "이미 취소된 예약은 다시 취소할 수 없습니다."),
-    RESERVATION_NOT_CANCELLABLE_STARTED(HttpStatus.BAD_REQUEST, "RESERVATION-12", "시작된 예약은 취소할 수 없습니다."),
-    RESERVATION_APPLICANT_UNAVAILABLE(HttpStatus.BAD_REQUEST, "RESERVATION-14", "예약 신청자는 해당 시간에 이미 다른 예약(신청 또는 참가)이 있습니다.");
+    RESERVATION_NOT_CANCELLABLE_STARTED(HttpStatus.BAD_REQUEST, "RESERVATION-12", "시작된 예약은 취소할 수 없습니다.");
 
     private final HttpStatus httpStatus;
     private final String code;

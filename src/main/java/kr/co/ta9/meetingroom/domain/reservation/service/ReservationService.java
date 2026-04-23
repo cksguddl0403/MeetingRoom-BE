@@ -1,6 +1,5 @@
 package kr.co.ta9.meetingroom.domain.reservation.service;
 
-import kr.co.ta9.meetingroom.domain.auth.exception.AuthException;
 import kr.co.ta9.meetingroom.domain.company.entity.CompanyMember;
 import kr.co.ta9.meetingroom.domain.company.repository.CompanyMemberRepository;
 import kr.co.ta9.meetingroom.domain.inspection.repository.InspectionRepository;
@@ -22,10 +21,11 @@ import kr.co.ta9.meetingroom.domain.room.entity.Room;
 import kr.co.ta9.meetingroom.domain.room.exception.RoomException;
 import kr.co.ta9.meetingroom.domain.room.repository.RoomRepository;
 import kr.co.ta9.meetingroom.domain.user.entity.User;
+import kr.co.ta9.meetingroom.domain.user.exception.UserException;
 import kr.co.ta9.meetingroom.global.common.response.OffsetPageResponseDto;
-import kr.co.ta9.meetingroom.global.error.code.AuthErrorCode;
 import kr.co.ta9.meetingroom.global.error.code.ReservationErrorCode;
 import kr.co.ta9.meetingroom.global.error.code.RoomErrorCode;
+import kr.co.ta9.meetingroom.global.error.code.UserErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -52,8 +52,8 @@ public class ReservationService {
     @Transactional
     public ReservationDto createReservation(User currentUser, Long companyId, ReservationCreateRequestDto reservationCreateRequestDto) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 현재 사용자 회사 소속 확인
@@ -109,8 +109,8 @@ public class ReservationService {
             ReservationListSearchRequestDto reservationListSearchRequestDto
     ) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 현재 사용자 회사 소속 확인
@@ -156,7 +156,7 @@ public class ReservationService {
     ) {
         // 인증 여부 확인
         if (!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 예약 조회
@@ -229,7 +229,7 @@ public class ReservationService {
     public ReservationDto cancelReservation(User currentUser, Long companyId, Long reservationId) {
         // 인증 여부 확인
         if (!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 예약 조회

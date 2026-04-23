@@ -1,6 +1,5 @@
 package kr.co.ta9.meetingroom.domain.equipment.service;
 
-import kr.co.ta9.meetingroom.domain.auth.exception.AuthException;
 import kr.co.ta9.meetingroom.domain.company.entity.Company;
 import kr.co.ta9.meetingroom.domain.company.entity.CompanyMember;
 import kr.co.ta9.meetingroom.domain.company.enums.Role;
@@ -17,10 +16,11 @@ import kr.co.ta9.meetingroom.domain.equipment.exception.EquipmentException;
 import kr.co.ta9.meetingroom.domain.equipment.mapper.EquipmentMapper;
 import kr.co.ta9.meetingroom.domain.equipment.repository.EquipmentRepository;
 import kr.co.ta9.meetingroom.domain.user.entity.User;
+import kr.co.ta9.meetingroom.domain.user.exception.UserException;
 import kr.co.ta9.meetingroom.global.common.response.OffsetPageResponseDto;
-import kr.co.ta9.meetingroom.global.error.code.AuthErrorCode;
 import kr.co.ta9.meetingroom.global.error.code.CompanyErrorCode;
 import kr.co.ta9.meetingroom.global.error.code.EquipmentErrorCode;
+import kr.co.ta9.meetingroom.global.error.code.UserErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -48,8 +48,8 @@ public class EquipmentService {
             EquipmentCreateRequestDto equipmentCreateRequestDto
     ) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 현재 사용자 회사 소속 확인
@@ -77,8 +77,8 @@ public class EquipmentService {
     // 비품 목록 조회
     public OffsetPageResponseDto<EquipmentListDto> getEquipments(User currentUser, Long companyId, String name, Pageable pageable) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 현재 사용자 회사 소속 확인
@@ -109,8 +109,8 @@ public class EquipmentService {
     // 비품 목록 전체 조회
     public List<EquipmentListDto> getAllEquipments(User currentUser, Long companyId) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 현재 사용자 회사 소속 확인
@@ -131,8 +131,8 @@ public class EquipmentService {
             EquipmentUpdateRequestDto equipmentUpdateRequestDto
     ) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 현재 사용자 회사 소속 확인
@@ -166,8 +166,8 @@ public class EquipmentService {
     @Transactional
     public void deleteEquipment(User currentUser, Long companyId, Long equipmentId) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 현재 사용자 회사 소속 확인

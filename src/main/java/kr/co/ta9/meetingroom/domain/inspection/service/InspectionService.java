@@ -1,10 +1,7 @@
 package kr.co.ta9.meetingroom.domain.inspection.service;
 
-import kr.co.ta9.meetingroom.domain.auth.exception.AuthException;
-import kr.co.ta9.meetingroom.domain.company.entity.Company;
 import kr.co.ta9.meetingroom.domain.company.entity.CompanyMember;
 import kr.co.ta9.meetingroom.domain.company.enums.Role;
-import kr.co.ta9.meetingroom.domain.company.exception.CompanyException;
 import kr.co.ta9.meetingroom.domain.company.repository.CompanyMemberRepository;
 import kr.co.ta9.meetingroom.domain.company.repository.CompanyRepository;
 import kr.co.ta9.meetingroom.domain.inspection.dto.*;
@@ -18,6 +15,7 @@ import kr.co.ta9.meetingroom.domain.room.entity.Room;
 import kr.co.ta9.meetingroom.domain.room.exception.RoomException;
 import kr.co.ta9.meetingroom.domain.room.repository.RoomRepository;
 import kr.co.ta9.meetingroom.domain.user.entity.User;
+import kr.co.ta9.meetingroom.domain.user.exception.UserException;
 import kr.co.ta9.meetingroom.global.common.response.OffsetPageResponseDto;
 import kr.co.ta9.meetingroom.global.error.code.*;
 import lombok.RequiredArgsConstructor;
@@ -45,8 +43,8 @@ public class InspectionService {
     @Transactional
     public InspectionDto createInspection(User currentUser, Long companyId, InspectionCreateRequestDto inspectionCreateRequestDto) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 현재 사용자 회사 소속 확인
@@ -96,8 +94,8 @@ public class InspectionService {
     // 점검 목록 조회
     public OffsetPageResponseDto<InspectionListDto> getInspections(User currentUser, Long companyId, Pageable pageable, InspectionListSearchRequestDto InspectionListSearchRequestDto) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 현재 사용자 회사 소속 확인
@@ -131,8 +129,8 @@ public class InspectionService {
             InspectionUpdateRequestDto inspectionUpdateRequestDto
     ) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 현재 사용자 회사 소속 확인
@@ -187,8 +185,8 @@ public class InspectionService {
     @Transactional
     public void deleteInspection(User currentUser, Long companyId, Long inspectionId) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 현재 사용자 회사 소속 확인

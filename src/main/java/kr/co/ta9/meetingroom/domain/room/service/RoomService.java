@@ -1,6 +1,5 @@
 package kr.co.ta9.meetingroom.domain.room.service;
 
-import kr.co.ta9.meetingroom.domain.auth.exception.AuthException;
 import kr.co.ta9.meetingroom.domain.company.entity.Company;
 import kr.co.ta9.meetingroom.domain.company.entity.CompanyMember;
 import kr.co.ta9.meetingroom.domain.company.enums.Role;
@@ -14,13 +13,13 @@ import kr.co.ta9.meetingroom.domain.equipment.exception.EquipmentException;
 import kr.co.ta9.meetingroom.domain.equipment.repository.EquipmentRepository;
 import kr.co.ta9.meetingroom.domain.equipment.repository.RoomEquipmentRepository;
 import kr.co.ta9.meetingroom.domain.inspection.repository.InspectionRepository;
-import kr.co.ta9.meetingroom.domain.reservation.exception.ReservationException;
 import kr.co.ta9.meetingroom.domain.room.dto.*;
 import kr.co.ta9.meetingroom.domain.room.entity.Room;
 import kr.co.ta9.meetingroom.domain.room.exception.RoomException;
 import kr.co.ta9.meetingroom.domain.room.mapper.RoomMapper;
 import kr.co.ta9.meetingroom.domain.room.repository.RoomRepository;
 import kr.co.ta9.meetingroom.domain.user.entity.User;
+import kr.co.ta9.meetingroom.domain.user.exception.UserException;
 import kr.co.ta9.meetingroom.global.common.response.OffsetPageResponseDto;
 import kr.co.ta9.meetingroom.global.error.code.*;
 import lombok.RequiredArgsConstructor;
@@ -52,8 +51,8 @@ public class RoomService {
     @Transactional
     public RoomDto createRoom(User currentUser, Long companyId, RoomCreateRequestDto roomCreateRequestDto) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 현재 사용자 회사 소속 확인
@@ -99,8 +98,8 @@ public class RoomService {
     public OffsetPageResponseDto<RoomListDto> getRooms(User currentUser, Long companyId, Pageable pageable, RoomSearchRequestDto roomSearchRequestDto
     ) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 현재 사용자 회사 소속 확인
@@ -146,8 +145,8 @@ public class RoomService {
     // 회의실 전체 목록 조회
     public List<RoomListDto> getAllRooms(User currentUser, Long companyId) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 현재 사용자 회사 소속 확인
@@ -175,8 +174,8 @@ public class RoomService {
     @Transactional
     public RoomDto updateRoom(User currentUser, Long companyId, Long roomId, RoomUpdateRequestDto roomUpdateRequestDto) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 현재 사용자 회사 소속 확인
@@ -222,8 +221,8 @@ public class RoomService {
     @Transactional
     public void deleteRoom(User currentUser, Long companyId, Long roomId) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 현재 사용자 회사 소속 확인

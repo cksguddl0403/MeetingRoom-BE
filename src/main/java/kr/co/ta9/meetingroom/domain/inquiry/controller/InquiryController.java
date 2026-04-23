@@ -42,10 +42,10 @@ public class InquiryController {
     public ResponseEntity<ApiResponse<InquiryDto>> createInquiry(
             @LoginUser User currentUser,
             @RequestPart("request") @Valid InquiryCreateRequestDto inquiryCreateRequestDto,
-            @RequestPart(value = "imageFiles", required = false) List<MultipartFile> imageFiles
+            @RequestPart(value = "inquiryImageFiles", required = false) List<MultipartFile> inquiryImageFiles
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                inquiryService.createInquiry(currentUser, inquiryCreateRequestDto, imageFiles)));
+                inquiryService.createInquiry(currentUser, inquiryCreateRequestDto, inquiryImageFiles)));
     }
 
     // 문의 수정
@@ -54,10 +54,10 @@ public class InquiryController {
             @LoginUser User currentUser,
             @PathVariable Long id,
             @RequestPart("request") @Valid InquiryUpdateRequestDto inquiryUpdateRequestDto,
-            @RequestPart(value = "imageFiles", required = false) List<MultipartFile> imageFiles
+            @RequestPart(value = "inquiryImageFiles", required = false) List<MultipartFile> inquiryImageFiles
     ) {
         return ResponseEntity.ok(ApiResponse.success(
-                inquiryService.updateInquiry(currentUser, id, inquiryUpdateRequestDto, imageFiles)));
+                inquiryService.updateInquiry(currentUser, id, inquiryUpdateRequestDto, inquiryImageFiles)));
     }
 
     // 문의 상세 조회

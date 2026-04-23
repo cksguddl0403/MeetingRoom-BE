@@ -1,6 +1,5 @@
 package kr.co.ta9.meetingroom.domain.inquiry.service;
 
-import kr.co.ta9.meetingroom.domain.auth.exception.AuthException;
 import kr.co.ta9.meetingroom.domain.category.entity.Category;
 import kr.co.ta9.meetingroom.domain.category.enums.CategoryType;
 import kr.co.ta9.meetingroom.domain.category.exception.CategoryException;
@@ -20,10 +19,11 @@ import kr.co.ta9.meetingroom.domain.inquiry.mapper.InquiryMapper;
 import kr.co.ta9.meetingroom.domain.inquiry.repository.InquiryReplyRepository;
 import kr.co.ta9.meetingroom.domain.inquiry.repository.InquiryRepository;
 import kr.co.ta9.meetingroom.domain.user.entity.User;
+import kr.co.ta9.meetingroom.domain.user.exception.UserException;
 import kr.co.ta9.meetingroom.global.common.response.OffsetPageResponseDto;
-import kr.co.ta9.meetingroom.global.error.code.AuthErrorCode;
 import kr.co.ta9.meetingroom.global.error.code.CategoryErrorCode;
 import kr.co.ta9.meetingroom.global.error.code.InquiryErrorCode;
+import kr.co.ta9.meetingroom.global.error.code.UserErrorCode;
 import kr.co.ta9.meetingroom.infra.s3.service.AmazonS3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -35,6 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional(readOnly = true)
@@ -51,10 +52,10 @@ public class InquiryService {
 
     // 문의 등록
     @Transactional
-    public InquiryDto createInquiry(User currentUser, InquiryCreateRequestDto inquiryCreateRequestDto, List<MultipartFile> imageFiles) {
+    public InquiryDto createInquiry(User currentUser, InquiryCreateRequestDto inquiryCreateRequestDto, List<MultipartFile> inquiryImageFiles) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 카테고리 조회
@@ -67,10 +68,13 @@ public class InquiryService {
         }
 
         // MultipartFile 유효성 검사
-        validateMultipartFiles(imageFiles);
+        validateImagesFiles(inquiryImageFiles);
 
         // 이미지 개수 검증
-        validateCreateImageCount(imageFiles);
+        int newImageCount = countValidImagesFiles(inquiryImageFiles);
+        if (newImageCount > MAX_INQUIRY_IMAGE_COUNT) {
+            throw new InquiryException(InquiryErrorCode.INQUIRY_IMAGE_COUNT_EXCEEDED);
+        }
 
         boolean secret = Boolean.TRUE.equals(inquiryCreateRequestDto.getIsPrivate());
 
@@ -87,7 +91,7 @@ public class InquiryService {
         inquiryRepository.save(inquiry);
 
         // 이미지 AWS 업로드
-        List<File> inquiryFiles = uploadImages(inquiry.getId(), imageFiles);
+        List<File> inquiryFiles = uploadImages(inquiry.getId(), inquiryImageFiles);
 
         // DB에 File 저장
         fileRepository.saveAll(inquiryFiles);
@@ -98,8 +102,8 @@ public class InquiryService {
     // 문의 상세 조회
     public InquiryDto getInquiry(User currentUser, Long id) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 문의 조회
@@ -120,8 +124,8 @@ public class InquiryService {
     // 문의 목록 조회
     public OffsetPageResponseDto<InquiryListDto> getInquiries(User currentUser, Pageable pageable, InquiryListSearchRequestDto inquiryListSearchRequestDto) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 문의 목록 조회
@@ -156,10 +160,10 @@ public class InquiryService {
 
     // 문의 수정
     @Transactional
-    public InquiryDto updateInquiry(User currentUser, Long inquiryId, InquiryUpdateRequestDto inquiryUpdateRequestDto, List<MultipartFile> imageFiles) {
+    public InquiryDto updateInquiry(User currentUser, Long inquiryId, InquiryUpdateRequestDto inquiryUpdateRequestDto, List<MultipartFile> inquiryImageFiles) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 카테고리 조회
@@ -181,7 +185,7 @@ public class InquiryService {
         }
 
         // MultipartFile 유효성 검사
-        validateMultipartFiles(imageFiles);
+        validateImagesFiles(inquiryImageFiles);
 
         boolean secret = Boolean.TRUE.equals(inquiryUpdateRequestDto.getIsPrivate());
 
@@ -195,7 +199,11 @@ public class InquiryService {
         List<String> retainUrls = inquiryUpdateRequestDto.getRetainImageUrls();
 
         // 이미지 개수 검증
-        validateUpdateImageCount(retainUrls, imageFiles);
+        int retainImageCount = retainUrls == null ? 0 : (int) retainUrls.stream().distinct().count();
+        int newImageCount = countValidImagesFiles(inquiryImageFiles);
+        if (retainImageCount + newImageCount > MAX_INQUIRY_IMAGE_COUNT) {
+            throw new InquiryException(InquiryErrorCode.INQUIRY_IMAGE_COUNT_EXCEEDED);
+        }
 
         // 유지할 이미지 URL이 기존 이미지 목록에 모두 존재하는지 검증
         for (String retainUrl : retainUrls) {
@@ -228,7 +236,7 @@ public class InquiryService {
         fileRepository.deleteAll(toRemoveFiles);
 
         // 새롭게 업로드된 이미지 AWS 업로드
-        List<File> inquiryImages = uploadImages(inquiry.getId(), imageFiles);
+        List<File> inquiryImages = uploadImages(inquiry.getId(), inquiryImageFiles);
 
         // 새로운 DB에 새로운 File 저장
         fileRepository.saveAll(inquiryImages);
@@ -250,8 +258,8 @@ public class InquiryService {
     @Transactional
     public void deleteInquiry(User currentUser, Long inquiryId) {
         // 인증 여부 확인
-        if(!currentUser.isCertificated()) {
-            throw new AuthException(AuthErrorCode.NOT_CERTIFIED_USER);
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
         }
 
         // 문의 조회
@@ -287,20 +295,22 @@ public class InquiryService {
 
     }
 
-    // MultipartFile 유효성 검사
-    private void validateMultipartFiles(List<MultipartFile> imageFiles) {
-        if (imageFiles == null || imageFiles.isEmpty()) {
+    // 이미지 확장자 및 ContentType 검증
+    private void validateImagesFiles(List<MultipartFile> ImageFiles) {
+        if (ImageFiles == null || ImageFiles.isEmpty()) {
             return;
         }
 
-        for (MultipartFile imageFile : imageFiles) {
-            if (imageFile == null || imageFile.isEmpty()) {
+        for (MultipartFile inquiryImageFile : ImageFiles) {
+            if (inquiryImageFile == null || inquiryImageFile.isEmpty()) {
                 continue;
             }
 
-            String originalName = imageFile.getOriginalFilename();
+            String originalName = inquiryImageFile.getOriginalFilename();
 
-            String extension = StringUtils.getFilenameExtension(originalName);
+            String extension = Optional.ofNullable(StringUtils.getFilenameExtension(originalName))
+                    .orElse("")
+                    .toLowerCase();
 
             boolean validExtension = extension.equals("jpg")
                     || extension.equals("jpeg")
@@ -311,7 +321,7 @@ public class InquiryService {
                 throw new InquiryException(InquiryErrorCode.INQUIRY_IMAGE_FORMAT_INVALID);
             }
 
-            String contentType = imageFile.getContentType();
+            String contentType = inquiryImageFile.getContentType();
 
             if (contentType != null && !contentType.isBlank()) {
 
@@ -329,30 +339,14 @@ public class InquiryService {
         }
     }
 
-    private void validateCreateImageCount(List<MultipartFile> imageFiles) {
-        int newImageCount = countValidMultipartFiles(imageFiles);
-
-        if (newImageCount > MAX_INQUIRY_IMAGE_COUNT) {
-            throw new InquiryException(InquiryErrorCode.INQUIRY_IMAGE_COUNT_EXCEEDED);
-        }
-    }
-
-    private void validateUpdateImageCount(List<String> retainImageUrls, List<MultipartFile> imageFiles) {
-        int retainImageCount = retainImageUrls == null ? 0 : (int) retainImageUrls.stream().distinct().count();
-        int newImageCount = countValidMultipartFiles(imageFiles);
-
-        if (retainImageCount + newImageCount > MAX_INQUIRY_IMAGE_COUNT) {
-            throw new InquiryException(InquiryErrorCode.INQUIRY_IMAGE_COUNT_EXCEEDED);
-        }
-    }
-
-    private int countValidMultipartFiles(List<MultipartFile> imageFiles) {
-        if (imageFiles == null || imageFiles.isEmpty()) {
+    // 이미지 개수 검증
+    private int countValidImagesFiles(List<MultipartFile> ImageFiles) {
+        if (ImageFiles == null || ImageFiles.isEmpty()) {
             return 0;
         }
 
         int count = 0;
-        for (MultipartFile imageFile : imageFiles) {
+        for (MultipartFile imageFile : ImageFiles) {
             if (imageFile == null || imageFile.isEmpty()) {
                 continue;
             }
@@ -363,12 +357,12 @@ public class InquiryService {
     }
 
     // 이미지 업로드
-    private List<File> uploadImages(Long inquiryId, List<MultipartFile> imageFiles) {
+    private List<File> uploadImages(Long inquiryId, List<MultipartFile> ImageFiles) {
         List<File> uploadedFiles = new ArrayList<>();
         List<MultipartFile> uploadFiles = new ArrayList<>();
 
-        if (imageFiles != null) {
-            for (MultipartFile multipartFile : imageFiles) {
+        if (ImageFiles != null) {
+            for (MultipartFile multipartFile : ImageFiles) {
                 if (multipartFile == null || multipartFile.isEmpty()) {
                     continue;
                 }
@@ -380,25 +374,28 @@ public class InquiryService {
             List<String> uploadPublicUrls = amazonS3Service.uploadFiles(uploadFiles);
 
             for (int i = 0; i < uploadFiles.size(); i++) {
-
                 MultipartFile multipartFile = uploadFiles.get(i);
-
-                String publicUrl = uploadPublicUrls.get(i);
 
                 String originalName = multipartFile.getOriginalFilename();
 
                 long size = multipartFile.getSize();
 
-                String extension = StringUtils.getFilenameExtension(originalName);
+                String extension = Optional.ofNullable(StringUtils.getFilenameExtension(originalName))
+                        .orElse("")
+                        .toLowerCase();
 
-                uploadedFiles.add(File.createFile(
-                        originalName,
+                String publicUrl = uploadPublicUrls.get(i);
+
+                File file = File.createFile
+                        (originalName,
                         size,
                         extension,
                         publicUrl,
                         FileType.INQUIRY,
                         inquiryId
-                ));
+                );
+
+                uploadedFiles.add(file);
             }
         }
 

@@ -7,8 +7,7 @@ import org.springframework.http.HttpStatus;
 @Getter
 @RequiredArgsConstructor
 public enum InquiryErrorCode implements ErrorCode {
-    INQUIRY_CATEGORY_NOT_FOUND(HttpStatus.NOT_FOUND, "INQUIRY-03", "문의 유형을 찾을 수 없습니다."),
-    INQUIRY_CATEGORY_INVALID_TYPE(HttpStatus.BAD_REQUEST, "INQUIRY-04", "문의에 사용할 수 있는 유형이 아닙니다."),
+    INQUIRY_CATEGORY_INVALID_TYPE(HttpStatus.BAD_REQUEST, "INQUIRY-03", "문의에 사용할 수 있는 유형이 아닙니다."),
 
     INQUIRY_NOT_FOUND(HttpStatus.NOT_FOUND, "INQUIRY-01", "문의를 찾을 수 없습니다."),
     INQUIRY_NOT_AUTHORIZED(HttpStatus.FORBIDDEN, "INQUIRY-02", "문의 권한이 없습니다."),

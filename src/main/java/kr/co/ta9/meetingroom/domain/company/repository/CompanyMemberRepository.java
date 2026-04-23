@@ -67,7 +67,7 @@ public interface CompanyMemberRepository extends JpaRepository<CompanyMember, Lo
     List<CompanyMember> findAllByCompany_Id(@Param("companyId") Long companyId);
 
     /*
-     * 사용자 기준 회사 소속 단건과 회사 정보를 조회합니다.
+     * 사용자 기준 회사 멤버 단건과 회사 정보를 조회합니다.
      *
      * SELECT cm.*, c.*
      * FROM company_member cm
