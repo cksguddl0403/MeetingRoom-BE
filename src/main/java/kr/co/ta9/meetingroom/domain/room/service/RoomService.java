@@ -142,6 +142,27 @@ public class RoomService {
                 .build();
     }
 
+    // 관리자 회의실 목록 조회
+    public OffsetPageResponseDto<RoomListDto> getAdminRooms(
+            User currentUser,
+            Long companyId,
+            Pageable pageable,
+            RoomSearchRequestDto roomSearchRequestDto
+    ) {
+        // 인증 여부 확인
+        if (!currentUser.isCertificated()) {
+            throw new UserException(UserErrorCode.NOT_CERTIFICATED_USER);
+        }
+
+        // 현재 사용자 회사 소속 확인
+        CompanyMember companyMember = validateCurrentUserBelongsToCompany(currentUser, companyId);
+
+        // 관리자 권한 확인
+        validateAdminRole(companyMember);
+
+        return getRooms(currentUser, companyId, pageable, roomSearchRequestDto);
+    }
+
     // 회의실 전체 목록 조회
     public List<RoomListDto> getAllRooms(User currentUser, Long companyId) {
         // 인증 여부 확인

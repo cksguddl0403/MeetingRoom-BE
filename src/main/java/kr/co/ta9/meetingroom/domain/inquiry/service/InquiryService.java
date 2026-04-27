@@ -33,6 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -295,7 +296,7 @@ public class InquiryService {
 
     }
 
-    // 이미지 확장자 및 ContentType 검증
+    // 이미지 파일명 길이, 확장자, ContentType 검증
     private void validateImagesFiles(List<MultipartFile> ImageFiles) {
         if (ImageFiles == null || ImageFiles.isEmpty()) {
             return;
@@ -307,6 +308,9 @@ public class InquiryService {
             }
 
             String originalName = inquiryImageFile.getOriginalFilename();
+            if (originalName != null && originalName.length() > 255) {
+                throw new InquiryException(InquiryErrorCode.INQUIRY_IMAGE_NAME_LENGTH_EXCEEDED);
+            }
 
             String extension = Optional.ofNullable(StringUtils.getFilenameExtension(originalName))
                     .orElse("")
@@ -336,6 +340,51 @@ public class InquiryService {
                     throw new InquiryException(InquiryErrorCode.INQUIRY_IMAGE_FORMAT_INVALID);
                 }
             }
+
+            if (!hasValidImageSignature(inquiryImageFile, extension)) {
+                throw new InquiryException(InquiryErrorCode.INQUIRY_IMAGE_SIGNATURE_INVALID);
+            }
+        }
+    }
+
+    private boolean hasValidImageSignature(MultipartFile imageFile, String extension) {
+        try {
+            byte[] signature = imageFile.getInputStream().readNBytes(12);
+
+            if (extension.equals("jpg") || extension.equals("jpeg")) {
+                return signature.length >= 3
+                        && (signature[0] & 0xFF) == 0xFF
+                        && (signature[1] & 0xFF) == 0xD8
+                        && (signature[2] & 0xFF) == 0xFF;
+            }
+
+            if (extension.equals("png")) {
+                return signature.length >= 8
+                        && (signature[0] & 0xFF) == 0x89
+                        && (signature[1] & 0xFF) == 0x50
+                        && (signature[2] & 0xFF) == 0x4E
+                        && (signature[3] & 0xFF) == 0x47
+                        && (signature[4] & 0xFF) == 0x0D
+                        && (signature[5] & 0xFF) == 0x0A
+                        && (signature[6] & 0xFF) == 0x1A
+                        && (signature[7] & 0xFF) == 0x0A;
+            }
+
+            if (extension.equals("webp")) {
+                return signature.length >= 12
+                        && signature[0] == 'R'
+                        && signature[1] == 'I'
+                        && signature[2] == 'F'
+                        && signature[3] == 'F'
+                        && signature[8] == 'W'
+                        && signature[9] == 'E'
+                        && signature[10] == 'B'
+                        && signature[11] == 'P';
+            }
+
+            return false;
+        } catch (IOException e) {
+            return false;
         }
     }
 

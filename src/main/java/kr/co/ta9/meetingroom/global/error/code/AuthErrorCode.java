@@ -13,7 +13,7 @@ public enum AuthErrorCode implements ErrorCode {
     ACCOUNT_RECOVERY_INFO_MISMATCH(HttpStatus.BAD_REQUEST, "AUTH-04", "입력하신 정보와 일치하는 회원이 없습니다."),
     ACCOUNT_VERIFICATION_EXPIRED_OR_INVALID(HttpStatus.BAD_REQUEST, "AUTH-5", "유효하지 않거나 만료된 계정 인증 정보입니다."),
     ACCOUNT_VERIFICATION_EMAIL_MISMATCH(HttpStatus.BAD_REQUEST, "AUTH-6", "이메일 인증 정보와 요청에 담긴 이메일이 일치하지 않습니다."),
-    LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "AUTH-7", "로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.");
+    LOGIN_FAILED(HttpStatus.UNAUTHORIZED, "AUTH-7", "로그인에 실패했습니다. 아이디와 비밀번호를 확인해주세요.");
 
     private final HttpStatus httpStatus;
     private final String code;

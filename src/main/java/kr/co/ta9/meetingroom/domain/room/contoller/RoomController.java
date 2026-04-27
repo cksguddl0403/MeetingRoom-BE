@@ -29,13 +29,13 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/company/{companyId}/rooms")
+@RequestMapping("/api/company/{companyId}")
 @RequiredArgsConstructor
 public class RoomController {
     private final RoomService roomService;
 
     // 회의실 등록
-    @PostMapping
+    @PostMapping("/rooms")
     public ResponseEntity<ApiResponse<RoomDto>> createRoom(
             @LoginUser User currentUser,
             @PathVariable Long companyId,
@@ -45,7 +45,7 @@ public class RoomController {
     }
 
     // 회의실 수정
-    @PatchMapping("/{roomId}")
+    @PatchMapping("/rooms/{roomId}")
     public ResponseEntity<ApiResponse<RoomDto>> updateRoom(
             @LoginUser User currentUser,
             @PathVariable Long companyId,
@@ -56,7 +56,7 @@ public class RoomController {
     }
 
     // 회의실 목록 조회
-    @GetMapping
+    @GetMapping("/rooms")
     public ResponseEntity<ApiResponse<OffsetPageResponseDto<RoomListDto>>> getRooms(
             @LoginUser User currentUser,
             @PathVariable Long companyId,
@@ -67,8 +67,19 @@ public class RoomController {
         return ResponseEntity.ok(ApiResponse.success(roomService.getRooms(currentUser, companyId, pageable, roomSearchRequestDto)));
     }
 
+    // 관리자 회의실 목록 조회
+    @GetMapping("/admin/rooms")
+    public ResponseEntity<ApiResponse<OffsetPageResponseDto<RoomListDto>>> getAdminRooms(
+            @LoginUser User currentUser,
+            @PathVariable Long companyId,
+            @PageableDefault(size = 10, sort = "maxCapacity", direction = Sort.Direction.DESC) Pageable pageable,
+            @Valid @ModelAttribute RoomSearchRequestDto roomSearchRequestDto
+    ) {
+        return ResponseEntity.ok(ApiResponse.success(roomService.getAdminRooms(currentUser, companyId, pageable, roomSearchRequestDto)));
+    }
+
     // 회의실 전체 목록 조회
-    @GetMapping("/all")
+    @GetMapping("/rooms/all")
     public ResponseEntity<ApiResponse<List<RoomListDto>>> getAllRooms(
             @LoginUser User currentUser,
             @PathVariable Long companyId
@@ -77,7 +88,7 @@ public class RoomController {
     }
 
     // 회의실 삭제
-    @DeleteMapping("/{roomId}")
+    @DeleteMapping("/rooms/{roomId}")
     public ResponseEntity<Void> deleteRoom(
             @LoginUser User currentUser,
             @PathVariable Long companyId,

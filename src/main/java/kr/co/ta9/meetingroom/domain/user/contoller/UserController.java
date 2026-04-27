@@ -4,6 +4,8 @@ import jakarta.validation.Valid;
 import kr.co.ta9.meetingroom.domain.user.dto.UserCreateRequestDto;
 import kr.co.ta9.meetingroom.domain.user.dto.UserDto;
 import kr.co.ta9.meetingroom.domain.user.dto.UserProfileDto;
+import kr.co.ta9.meetingroom.domain.user.dto.UserProfileUpdateResponseDto;
+import kr.co.ta9.meetingroom.domain.user.dto.UserInfoUpdateResponseDto;
 import kr.co.ta9.meetingroom.domain.user.dto.UserUpdateRequestDto;
 import kr.co.ta9.meetingroom.domain.user.entity.User;
 import kr.co.ta9.meetingroom.domain.user.service.UserProfileUpdateRequestDto;
@@ -40,7 +42,7 @@ public class UserController {
 
     // 사용자 정보 수정
     @PatchMapping
-    public ResponseEntity<ApiResponse<UserDto>> updateUserInfo(@LoginUser User currentUser, @RequestBody @Valid UserUpdateRequestDto userUpdateRequestDto) {
+    public ResponseEntity<ApiResponse<UserInfoUpdateResponseDto>> updateUserInfo(@LoginUser User currentUser, @RequestBody @Valid UserUpdateRequestDto userUpdateRequestDto) {
         return ResponseEntity.ok(ApiResponse.success(userService.updateUserInfo(currentUser, userUpdateRequestDto)));
     }
 
@@ -52,10 +54,10 @@ public class UserController {
 
     // 사용자 프로필 수정
     @PatchMapping("/profiles")
-    public ResponseEntity<ApiResponse<UserProfileDto>> updateUserProfile(@LoginUser User currentUser,
-                                                                         @RequestPart("request") @Valid
-                                                                         UserProfileUpdateRequestDto userProfileUpdateRequestDto,
-                                                                         @RequestPart(value = "profileImageFile", required = false) MultipartFile profileImageFile) {
+    public ResponseEntity<ApiResponse<UserProfileUpdateResponseDto>> updateUserProfile(@LoginUser User currentUser,
+                                                                                        @RequestPart("request") @Valid
+                                                                                        UserProfileUpdateRequestDto userProfileUpdateRequestDto,
+                                                                                        @RequestPart(value = "profileImageFile", required = false) MultipartFile profileImageFile) {
         return ResponseEntity.ok(ApiResponse.success(userService.updateUserProfile(currentUser, userProfileUpdateRequestDto, profileImageFile)));
     }
 }

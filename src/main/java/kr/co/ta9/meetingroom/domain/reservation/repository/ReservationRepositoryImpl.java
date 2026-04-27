@@ -157,67 +157,6 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
     }
 
     /*
-     * 회의실 목록 조건으로 예약 목록을 조회합니다.
-     *
-     * SELECT r.id, r.title, rm.id,
-     *        CASE WHEN rm.is_deleted = TRUE THEN CONCAT(SUBSTRING_INDEX(rm.name, '_deleted_', 1), ' (삭제 됨)') ELSE rm.name END AS room_name,
-     *        r.start_at, r.end_at, r.status, u.id,
-     *        CASE WHEN am.status = 'RESIGNED' THEN CONCAT(u.nickname, ' (전 직원)') ELSE u.nickname END AS applicant_nickname
-     * FROM reservation r
-     * LEFT JOIN room rm ON r.room_id = rm.id
-     * LEFT JOIN company_member am ON r.company_member_id = am.id
-     * LEFT JOIN user u ON am.user_id = u.id
-     * WHERE rm.company_id = :companyId
-     *   AND (:status IS NULL OR r.status = :status)
-     *   AND (:fromDate IS NULL OR r.start_at >= :fromDateStartOfDay)
-     *   AND (:toDate IS NULL OR r.end_at < :toDatePlusOneStartOfDay)
-     *   AND (
-     *     :timePeriod IS NULL
-     *     OR (:timePeriod = 'MORNING' AND EXTRACT(HOUR FROM r.start_at) < 12)
-     *     OR (:timePeriod = 'AFTERNOON' AND EXTRACT(HOUR FROM r.start_at) >= 12)
-     *   )
-     *   AND (
-     *     (:applicantOnly IS NOT TRUE AND :participatedOnly IS NOT TRUE)
-     *     OR (:applicantOnly IS TRUE AND am.user_id = :currentUserId)
-     *     OR (:participatedOnly IS TRUE AND EXISTS (
-     *         SELECT 1
-     *         FROM reservation_participant rp
-     *         JOIN company_member pcm ON rp.company_member_id = pcm.id
-     *         WHERE rp.reservation_id = r.id
-     *           AND pcm.user_id = :currentUserId
-     *     ))
-     *   )
-     *   AND rm.id IN (...)
-     */
-    @Override
-    public List<ReservationQueryDto> getAllReservations(Long currentUserId, Long companyId, List<Long> roomIds) {
-        return queryFactory
-                .select(Projections.constructor(ReservationQueryDto.class,
-                                reservation.id,
-                                reservation.title,
-                                Projections.constructor(ReservationRoomQueryDto.class,
-                                        room.id,
-                                        roomDisplayNameExpr()
-                                ),
-                                reservation.startAt,
-                                reservation.endAt,
-                                reservation.status,
-                                Projections.constructor(ReservationApplicantQueryDto.class,
-                                        user.id,
-                                        applicantDisplayNameExpr())
-                        )
-                )
-                .from(reservation)
-                .leftJoin(reservation.room, room)
-                .leftJoin(reservation.companyMember, applicantMember)
-                .leftJoin(applicantMember.user, user)
-                .where(
-                        eqCompanyId(companyId),
-                        room.id.in(roomIds)
-                ).fetch();
-    }
-
-    /*
      * 예약 ID 기준 상세 정보를 조회합니다.
      *
      * SELECT r.id, r.title, rm.id,

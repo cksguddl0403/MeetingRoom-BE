@@ -134,42 +134,6 @@ public class InspectionRepositoryImpl implements InspectionRepositoryCustom {
     }
 
     /*
-     * 조건 기반 점검 목록을 조회합니다.
-     *
-     * SELECT i.id, i.name, i.start_at, i.end_at, i.created_at, rm.id, rm.name
-     * FROM inspection i
-     * LEFT JOIN room rm ON i.room_id = rm.id
-     * WHERE rm.company_id = :companyId
-     *   AND (:roomId IS NULL OR rm.id = :roomId)
-     *   AND (:name IS NULL OR i.name LIKE CONCAT('%', :name, '%'))
-     *   AND (:fromDate IS NULL OR i.end_at >= :fromDateStartOfDay)
-     *   AND (:toDate IS NULL OR i.start_at < :toDatePlusOneStartOfDay)
-     */
-    @Override
-    public List<InspectionQueryDto> getAllInspections(Long companyId) {
-        return queryFactory
-                .select(Projections.constructor(
-                        InspectionQueryDto.class,
-                        inspection.id,
-                        inspection.name,
-                        inspection.startAt,
-                        inspection.endAt,
-                        inspection.createdAt,
-                        Projections.constructor(
-                                InspectionRoomQueryDto.class,
-                                room.id,
-                                room.name
-                        )
-                ))
-                .from(inspection)
-                .leftJoin(inspection.room, room)
-                .where(
-                        companyIdEq(companyId)
-                )
-                .fetch();
-    }
-
-    /*
      * 점검 ID 일치 조건을 생성합니다.
      *
      * WHERE i.id = ?

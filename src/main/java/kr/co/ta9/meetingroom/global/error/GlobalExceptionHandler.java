@@ -2,6 +2,7 @@ package kr.co.ta9.meetingroom.global.error;
 
 import kr.co.ta9.meetingroom.global.common.response.ApiResponse;
 import kr.co.ta9.meetingroom.global.error.code.CommonErrorCode;
+import kr.co.ta9.meetingroom.global.error.code.FileErrorCode;
 import jakarta.validation.ConstraintViolationException;
 import kr.co.ta9.meetingroom.global.error.exception.BusinessException;
 import kr.co.ta9.meetingroom.global.error.exception.ExternalServiceException;
@@ -13,6 +14,7 @@ import org.springframework.validation.BindException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 
 @RestControllerAdvice
@@ -21,6 +23,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiResponse<ErrorResponse>> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
         return ResponseEntity.status(CommonErrorCode.INVALID_REQUEST.getHttpStatus()).body(ApiResponse.validationError(ex.getBindingResult()));
+    }
+
+    // 파라미터 유효성 검사 예외 처리
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleConstraintViolationException(ConstraintViolationException ex) {
+        return ResponseEntity.status(CommonErrorCode.INVALID_REQUEST.getHttpStatus()).body(ApiResponse.validationError(ex));
     }
 
     // HTTP 메서드 오류 처리
@@ -45,6 +53,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiResponse<ErrorResponse>> handleAccessDeniedException(AuthenticationException ex) throws AccessDeniedException {
         throw ex;
+    }
+
+    // 파일 크기 초과 예외 처리 (max-file-size: 10MB)
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<ApiResponse<ErrorResponse>> handleMaxUploadSizeExceeded(MaxUploadSizeExceededException ex) {
+        return ResponseEntity.status(FileErrorCode.FILE_SIZE_EXCEEDED.getHttpStatus()).body(ApiResponse.error(FileErrorCode.FILE_SIZE_EXCEEDED));
     }
 
     // 그 외 모든 예외 처리

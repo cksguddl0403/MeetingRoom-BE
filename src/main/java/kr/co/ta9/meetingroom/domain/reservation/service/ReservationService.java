@@ -160,7 +160,7 @@ public class ReservationService {
         }
 
         // 예약 조회
-        Reservation reservation = reservationRepository.findByIdAndRoom_Company_Id(reservationId, companyId)
+        Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND));
 
         // 예약 신청자와 현재 사용자가 같은지 확인
@@ -233,7 +233,7 @@ public class ReservationService {
         }
 
         // 예약 조회
-        Reservation reservation = reservationRepository.findByIdAndRoom_Company_Id(reservationId, companyId)
+        Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND));
 
         // 예약 신청자와 현재 사용자가 같은지 확인
@@ -343,7 +343,7 @@ public class ReservationService {
         }
 
         Set<Long> busy = new HashSet<>(reservationRepository.findCompanyMemberIdsWithOverlappingReservationAsParticipant(
-                ReservationStatus.CONFIRMED, startAt, endAt, participantCompanyIds, excludeReservationId));
+                startAt, endAt, participantCompanyIds, excludeReservationId));
 
         if (!busy.isEmpty()) {
             throw new ReservationException(ReservationErrorCode.RESERVATION_PARTICIPANT_UNAVAILABLE);

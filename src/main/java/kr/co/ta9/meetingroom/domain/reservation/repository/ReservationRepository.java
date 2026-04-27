@@ -49,42 +49,30 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long>,
     );
 
     /*
-     * 회사 범위에서 예약 단건을 조회합니다.
-     *
-     * SELECT r.*
-     * FROM reservation r
-     * JOIN room rm ON r.room_id = rm.id
-     * WHERE r.id = ?
-     *   AND rm.company_id = ?
-     * LIMIT 1
-     */
-    Optional<Reservation> findByIdAndRoom_Company_Id(Long id, Long companyId);
-
-    /*
      * 예약 시간이 겹치는 회사 멤버 ID 목록을 조회합니다.
      *
      * SELECT DISTINCT cm.id
      * FROM reservation_participant rp
      * JOIN reservation r ON rp.reservation_id = r.id
      * JOIN company_member cm ON rp.company_member_id = cm.id
-     * WHERE r.status = ?
+     * WHERE r.status = 'CONFIRMED'
      *   AND r.start_at < ?
      *   AND r.end_at > ?
      *   AND cm.id IN (...companyMemberIds)
      *   AND (? IS NULL OR r.id <> ?)
      */
     @Query("""
-            SELECT DISTINCT p.companyMember.id
+            SELECT DISTINCT cm.id
             FROM ReservationParticipant p
             JOIN p.reservation r
-            WHERE r.status = :status
+            JOIN p.companyMember cm
+            WHERE r.status = kr.co.ta9.meetingroom.domain.reservation.enums.ReservationStatus.CONFIRMED
               AND r.startAt < :endAt
               AND r.endAt > :startAt
-              AND p.companyMember.id IN :companyMemberIds
+              AND cm.id IN :companyMemberIds
               AND (:excludeReservationId IS NULL OR r.id <> :excludeReservationId)
             """)
     Set<Long> findCompanyMemberIdsWithOverlappingReservationAsParticipant(
-            @Param("status") ReservationStatus status,
             @Param("startAt") LocalDateTime startAt,
             @Param("endAt") LocalDateTime endAt,
             @Param("companyMemberIds") List<Long> companyMemberIds,

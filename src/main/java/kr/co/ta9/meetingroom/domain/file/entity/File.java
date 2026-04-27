@@ -26,14 +26,14 @@ public class File extends BaseEntity {
     @Column(nullable = false, length = 10)
     private String extension;
 
-    @Column(nullable = false, length = 2083)
+    @Column(nullable = false, columnDefinition = "MEDIUMTEXT")
     private String url;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private FileType type;
 
-    @Column( nullable = false)
+    @Column(nullable = false)
     private Long targetId;
 
     @Builder(access = AccessLevel.PRIVATE)

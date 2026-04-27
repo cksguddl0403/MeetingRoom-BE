@@ -1,6 +1,7 @@
 package kr.co.ta9.meetingroom.domain.equipment.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import kr.co.ta9.meetingroom.domain.equipment.dto.EquipmentCreateRequestDto;
 import kr.co.ta9.meetingroom.domain.equipment.dto.EquipmentDto;
 import kr.co.ta9.meetingroom.domain.equipment.dto.EquipmentListDto;
@@ -15,7 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/company/{companyId}/equipments")
 @RequiredArgsConstructor
+@Validated
 public class EquipmentController {
 
     private final EquipmentService equipmentService;
@@ -55,7 +57,7 @@ public class EquipmentController {
     public ResponseEntity<ApiResponse<OffsetPageResponseDto<EquipmentListDto>>> getEquipments(
             @LoginUser User currentUser,
             @PathVariable Long companyId,
-            @RequestParam(required = false) String name,
+            @RequestParam(required = false) @Size(max = 20) String name,
             @PageableDefault(size = 10, sort = "createAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.ok(ApiResponse.success(

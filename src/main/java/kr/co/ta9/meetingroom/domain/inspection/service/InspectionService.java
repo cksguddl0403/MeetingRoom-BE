@@ -99,7 +99,10 @@ public class InspectionService {
         }
 
         // 현재 사용자 회사 소속 확인
-        validateCurrentUserBelongsToCompany(currentUser, companyId);
+        CompanyMember companyMember = validateCurrentUserBelongsToCompany(currentUser, companyId);
+
+        // 관리자 권한 확인
+        validateAdminRole(companyMember);
 
         // 점검 목록 조회
         Page<InspectionQueryDto> page = inspectionRepository.getInspections(companyId, pageable, InspectionListSearchRequestDto);

@@ -82,7 +82,10 @@ public class EquipmentService {
         }
 
         // 현재 사용자 회사 소속 확인
-        validateCurrentUserBelongsToCompany(currentUser, companyId);
+        CompanyMember companyMember = validateCurrentUserBelongsToCompany(currentUser, companyId);
+
+        // 관리자 권한 확인
+        validateAdminRole(companyMember);
 
         // 비품 목록 조회
         Page<EquipmentQueryDto> page = equipmentRepository.getEquipments(companyId, name, pageable);
