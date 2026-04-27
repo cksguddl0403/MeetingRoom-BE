@@ -34,7 +34,6 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class EquipmentService {
-
     private final EquipmentRepository equipmentRepository;
     private final CompanyRepository companyRepository;
     private final CompanyMemberRepository companyMemberRepository;

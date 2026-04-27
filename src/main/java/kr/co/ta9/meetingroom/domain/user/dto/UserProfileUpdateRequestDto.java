@@ -1,4 +1,4 @@
-package kr.co.ta9.meetingroom.domain.user.service;
+package kr.co.ta9.meetingroom.domain.user.dto;
 
 import lombok.Builder;
 import lombok.Getter;

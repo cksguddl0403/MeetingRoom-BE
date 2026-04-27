@@ -8,7 +8,7 @@ import kr.co.ta9.meetingroom.domain.user.dto.UserProfileUpdateResponseDto;
 import kr.co.ta9.meetingroom.domain.user.dto.UserInfoUpdateResponseDto;
 import kr.co.ta9.meetingroom.domain.user.dto.UserUpdateRequestDto;
 import kr.co.ta9.meetingroom.domain.user.entity.User;
-import kr.co.ta9.meetingroom.domain.user.service.UserProfileUpdateRequestDto;
+import kr.co.ta9.meetingroom.domain.user.dto.UserProfileUpdateRequestDto;
 import kr.co.ta9.meetingroom.domain.user.service.UserService;
 import kr.co.ta9.meetingroom.global.common.annotation.LoginUser;
 import kr.co.ta9.meetingroom.global.common.response.ApiResponse;

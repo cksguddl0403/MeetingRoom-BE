@@ -38,7 +38,6 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class RoomService {
-
     private final RoomRepository roomRepository;
     private final RoomEquipmentRepository roomEquipmentRepository;
     private final EquipmentRepository equipmentRepository;
