@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import jakarta.validation.constraints.AssertTrue;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -27,6 +28,7 @@ public class ReservationUpdateRequestDto {
     private Long roomId;
 
     @NotNull(message = "시작 일시는 필수 입력값입니다.")
+    @FutureOrPresent(message = "시작 일시는 현재 이후여야 합니다.")
     private LocalDateTime startAt;
 
     @NotNull(message = "종료 일시는 필수 입력값입니다.")
