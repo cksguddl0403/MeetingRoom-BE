@@ -3,7 +3,6 @@ package kr.co.ta9.meetingroom.domain.inspection.service;
 import kr.co.ta9.meetingroom.domain.company.entity.CompanyMember;
 import kr.co.ta9.meetingroom.domain.company.enums.Role;
 import kr.co.ta9.meetingroom.domain.company.repository.CompanyMemberRepository;
-import kr.co.ta9.meetingroom.domain.company.repository.CompanyRepository;
 import kr.co.ta9.meetingroom.domain.inspection.dto.*;
 import kr.co.ta9.meetingroom.domain.inspection.entity.Inspection;
 import kr.co.ta9.meetingroom.domain.inspection.exception.InspectionException;
@@ -31,9 +30,7 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class InspectionService {
-
     private final InspectionRepository inspectionRepository;
-    private final CompanyRepository companyRepository;
     private final CompanyMemberRepository companyMemberRepository;
     private final RoomRepository roomRepository;
     private final ReservationRepository reservationRepository;

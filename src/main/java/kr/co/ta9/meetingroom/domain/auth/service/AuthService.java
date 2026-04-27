@@ -6,7 +6,6 @@ import kr.co.ta9.meetingroom.domain.auth.dto.AvailabilityResponseDto;
 import kr.co.ta9.meetingroom.domain.auth.dto.EmailAvailabilityRequestDto;
 import kr.co.ta9.meetingroom.domain.auth.dto.LoginIdAvailabilityRequestDto;
 import kr.co.ta9.meetingroom.domain.auth.dto.NicknameAvailabilityRequestDto;
-import kr.co.ta9.meetingroom.domain.auth.mapper.AuthMapper;
 import kr.co.ta9.meetingroom.domain.user.repository.UserRepository;
 import kr.co.ta9.meetingroom.global.security.util.CookieUtils;
 import kr.co.ta9.meetingroom.global.security.util.JwtUtils;
@@ -26,7 +25,6 @@ public class AuthService {
     private final JwtUtils jwtUtils;
     private final UserRepository userRepository;
     private final StringRedisTemplate stringRedisTemplate;
-    private final AuthMapper authMapper;
 
     // 엑세스 토큰 갱신
     @Transactional
