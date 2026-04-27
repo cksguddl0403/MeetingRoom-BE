@@ -1,8 +1,8 @@
 package kr.co.ta9.meetingroom.domain.inspection.dto;
 
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,6 +19,7 @@ public class InspectionCreateRequestDto {
     private String name;
 
     @NotNull(message = "시작 일시를 입력해 주세요.")
+    @FutureOrPresent(message = "시작 일시는 현재 이후여야 합니다.")
     private LocalDateTime startAt;
 
     @NotNull(message = "종료 일시를 입력해 주세요.")
